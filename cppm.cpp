@@ -16,11 +16,39 @@ enum {
 };
 
 // トークンの型
-typedef struct {
-  int ty;      // トークンの型
-  int val;     // tyがTK_NUMの場合、その数値
-  char *input; // トークン文字列（エラーメッセージ用）
-} Token;
+class Token {
+public:
+  // コンストラクタ
+  Token(int ty, char *input);
+  Token(int ty, int val, char *input);
+
+  // getter
+  int ty() { return _ty; }
+  int val() { return _val; }
+  char *input() { return _input; }
+
+private:
+  int _ty;      // トークンの型
+  int _val;     // tyがTK_NUMの場合、その数値
+  char *_input; // トークン文字列（エラーメッセージ用）
+};
+
+// コンストラクタ
+Token::Token(int ty, char *input)
+  : _ty(ty), _val(0), _input(input) {
+}
+
+Token::Token(int ty, int val, char *input)
+  : _ty(ty), _val(val), _input(input) {
+}
+
+// 入力プログラム
+char *user_input;
+
+// トークナイズした結果のトークン列はこの配列に保存する
+// 100個以上のトークンは来ないものとする
+int pos;
+Token *tokens[100];
 
 // 抽象構文木の型を表す値
 // 1文字の演算子はその演算子そのものを値とする
@@ -46,30 +74,16 @@ private:
   Node *_lhs; // 左辺
   Node *_rhs; // 右辺
   int _val;   // tyがND_NUMの場合のみ使う
-
-public:
-
 };
 
 // コンストラクタ
-Node::Node(int ty, Node *lhs, Node *rhs) {
-  _ty = ty;
-  _lhs = lhs;
-  _rhs = rhs;
+Node::Node(int ty, Node *lhs, Node *rhs)
+  : _ty(ty), _lhs(lhs), _rhs(rhs) {
 }
 
-Node::Node(int val) {
-  _ty = ND_NUM;
-  _val = val;
+Node::Node(int val)
+  : _ty(ND_NUM), _val(val) {
 }
-
-// 入力プログラム
-char *user_input;
-
-// トークナイズした結果のトークン列はこの配列に保存する
-// 100個以上のトークンは来ないものとする
-int pos;
-Token tokens[100];
 
 // エラーを報告するための関数
 // printfと同じ引数を取る
@@ -91,7 +105,7 @@ void error_at(char *loc, char *msg) {
 }
 
 int consume(int ty) {
-  if (tokens[pos].ty != ty)
+  if (tokens[pos]->ty() != ty)
     return 0;
   ++pos;
   return 1;
@@ -99,10 +113,10 @@ int consume(int ty) {
 
 // パーサー
 Node *num() {
-  if (tokens[pos].ty == TK_NUM)
-    return new Node(tokens[pos++].val);
+  if (tokens[pos]->ty() == TK_NUM)
+    return new Node(tokens[pos++]->val());
 
-  error_at(tokens[pos].input, "数値ではないトークンです");
+  error_at(tokens[pos]->input(), "数値ではないトークンです");
 }
 
 Node *expr() {
@@ -116,6 +130,40 @@ Node *expr() {
     else
       return node;
   }
+}
+
+// user_inputが指している文字列を
+// トークンに分割してtokensに保存する
+void tokenize(char *p) {
+  user_input = p;
+
+  int i = 0;
+  while (*p) {
+    // 空白文字をスキップ
+    if (isspace(*p)) {
+      ++p;
+      continue;
+    }
+
+    // '+', '-' 二項演算子
+    if (*p == '+' || *p == '-') {
+      tokens[i] = new Token(*p, p);
+      ++i;
+      ++p;
+      continue;
+    }
+
+    // 整数
+    if (isdigit(*p)) {
+      tokens[i] = new Token(TK_NUM, std::strtol(p, &p, 10), p);
+      ++i;
+      continue;
+    }
+
+    error_at(p, "トークナイズできません");
+  }
+
+  tokens[i] = new Token(TK_EOF, p);
 }
 
 // コード生成
@@ -148,44 +196,7 @@ void gen(Node *node) {
   std::cout << "  push rax" << std::endl;
 }
 
-// user_inputが指している文字列を
-// トークンに分割してtokensに保存する
-void tokenize(char *p) {
-  user_input = p;
-
-  int i = 0;
-  while (*p) {
-    // 空白文字をスキップ
-    if (isspace(*p)) {
-      ++p;
-      continue;
-    }
-
-    // '+', '-' 二項演算子
-    if (*p == '+' || *p == '-') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
-      ++i;
-      ++p;
-      continue;
-    }
-
-    // 整数
-    if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = std::strtol(p, &p, 10);
-      ++i;
-      continue;
-    }
-
-    error_at(p, "トークナイズできません");
-  }
-
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
-}
-
+// まいんちゃん
 int main(int argc, char **argv) {
   if (argc != 2) {
     std::cerr << "引数の個数が正しくありません\n";
