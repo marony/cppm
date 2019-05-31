@@ -5,9 +5,10 @@
 
 /*
 # EBNF
-expr = mul ("+" mul | "-" mul)*
-mul  = term ("*" term | "/" term)*
-term = num | "(" expr ")"
+expr  = mul ("+" mul | "-" mul)*
+mul   = unary ("*" unary | "/" unary)*
+unary = ("+" | "-")? term
+term  = num | "(" expr ")"
 */
 
 // トークンの型を表す値
@@ -116,6 +117,7 @@ int consume(int ty) {
 // パーサー
 Node *expr();
 Node *mul();
+Node *unary();
 Node *term();
 Node *num();
 
@@ -133,16 +135,24 @@ Node *expr() {
 }
 
 Node *mul() {
-  Node *node = term();
+  Node *node = unary();
 
   for (;;) {
     if (consume('*'))
-      node = new Node('*', node, term());
+      node = new Node('*', node, unary());
     else if (consume('/'))
-      node = new Node('/', node, term());
+      node = new Node('/', node, unary());
     else
       return node;
   }
+}
+
+Node *unary() {
+  if (consume('+'))
+    return term();
+  if (consume('-')) // "0 - term"
+    return new Node('-', new Node(0), term());
+  return term();
 }
 
 Node *term() {
