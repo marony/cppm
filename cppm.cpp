@@ -5,7 +5,8 @@
 
 /*
 # EBNF
-expr = num ("+" num | "-" num)*
+expr = mul ("+" mul | "-" mul)*
+mul  = num ("*" num | "/" num)*
 */
 
 // トークンの型を表す値
@@ -119,14 +120,27 @@ Node *num() {
   error_at(tokens[pos]->input(), "数値ではないトークンです");
 }
 
-Node *expr() {
+Node *mul() {
   Node *node = num();
 
   for (;;) {
+    if (consume('*'))
+      node = new Node('*', node, num());
+    else if (consume('/'))
+      node = new Node('/', node, num());
+    else
+      return node;
+  }
+}
+
+Node *expr() {
+  Node *node = mul();
+
+  for (;;) {
     if (consume('+'))
-      node = new Node('+', node, num());
+      node = new Node('+', node, mul());
     else if (consume('-'))
-      node = new Node('-', node, num());
+      node = new Node('-', node, mul());
     else
       return node;
   }
@@ -146,7 +160,7 @@ void tokenize(char *p) {
     }
 
     // '+', '-' 二項演算子
-    if (*p == '+' || *p == '-') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
       tokens[i] = new Token(*p, p);
       ++i;
       ++p;
@@ -190,6 +204,13 @@ void gen(Node *node) {
     break;
   case '-':
     std::cout << "  sub rax, rdi" << std::endl;
+    break;
+  case '*':
+    printf("  imul rdi\n");
+    break;
+  case '/':
+    printf("  cqo\n");
+    printf("  idiv rdi\n");
     break;
   }
 
