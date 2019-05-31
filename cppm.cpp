@@ -2,19 +2,37 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdarg>
+#include <string.h>
 
 /*
 # EBNF
-expr  = mul ("+" mul | "-" mul)*
-mul   = unary ("*" unary | "/" unary)*
-unary = ("+" | "-")? term
-term  = num | "(" expr ")"
+expr       = equality
+equality   = relational ("==" relational | "!=" relational)*
+relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+add        = mul ("+" mul | "-" mul)*
+mul        = unary ("*" unary | "/" unary)*
+unary      = ("+" | "-")? term
+term       = num | "(" expr ")"
+*/
+
+/*
+# 演算子の優先順位
+    == !=
+    < <= > >=
+    + -
+    * /
+    単項+ 単項-
+    ()
 */
 
 // トークンの型を表す値
 // 1文字の演算子はその演算子そのものを値とする
 enum {
   TK_NUM = 256, // 整数トークン
+  TK_EQ,        // ==
+  TK_NE,        // !=
+  TK_LE,        // <=
+  TK_GE,        // >=
   TK_EOF,       // 入力の終わりを表すトークン
 };
 
@@ -57,6 +75,10 @@ Token *tokens[100];
 // 1文字の演算子はその演算子そのものを値とする
 enum {
   ND_NUM = 256, // 整数トークン
+  ND_EQ,        // ==
+  ND_NE,        // !=
+  ND_LE,        // <=
+  ND_GE,        // >=
 };
 
 // 抽象構文木
@@ -116,12 +138,49 @@ int consume(int ty) {
 
 // パーサー
 Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *term();
 Node *num();
 
 Node *expr() {
+  Node *node = equality();
+}
+
+Node *equality() {
+  Node *node = relational();
+
+  for (;;) {
+      if (consume(TK_EQ))
+        node = new Node(ND_EQ, node, relational());
+      else if (consume(TK_NE))
+        node = new Node(ND_NE, node, relational());
+      else
+        return node;
+  }
+}
+
+Node *relational() {
+  Node *node = add();
+
+  for (;;) {
+      if (consume('<'))
+        node = new Node('<', node, add());
+      else if (consume(TK_LE))
+        node = new Node(ND_LE, node, add());
+      else if (consume('>'))
+        node = new Node('>', node, add());
+      else if (consume(TK_GE))
+        node = new Node(ND_GE, node, add());
+      else
+        return node;
+  }
+}
+
+Node *add() {
   Node *node = mul();
 
   for (;;) {
@@ -169,15 +228,9 @@ Node *term() {
   if (tokens[pos]->ty() == TK_NUM)
     return new Node(tokens[pos++]->val());
 
+  std::cerr << " *** " << tokens[pos]->ty() << " *** " << std::endl;
   error_at(tokens[pos]->input(),
            "数値でも開きカッコでもないトークンです");
-}
-
-Node *num() {
-  if (tokens[pos]->ty() == TK_NUM)
-    return new Node(tokens[pos++]->val());
-
-  error_at(tokens[pos]->input(), "数値ではないトークンです");
 }
 
 // user_inputが指している文字列を
@@ -193,8 +246,34 @@ void tokenize(char *p) {
       continue;
     }
 
-    // '+', '-' 二項演算子
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
+    // 複数文字 二項演算子
+    if (::strncmp(p, "==", 2) == 0) {
+        tokens[i] = new Token(TK_EQ, p);
+      ++i;
+      p += 2;
+      continue;
+    }
+    else if (::strncmp(p, "!=", 2) == 0) {
+        tokens[i] = new Token(TK_NE, p);
+      ++i;
+      p += 2;
+      continue;
+    }
+    else if (::strncmp(p, "<=", 2) == 0) {
+        tokens[i] = new Token(TK_LE, p);
+      ++i;
+      p += 2;
+      continue;
+    }
+    else if (::strncmp(p, ">=", 2) == 0) {
+        tokens[i] = new Token(TK_GE, p);
+      ++i;
+      p += 2;
+      continue;
+    }
+    // 1文字 二項演算子
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
+        *p == '(' || *p == ')' || *p == '<' || *p == '>') {
       tokens[i] = new Token(*p, p);
       ++i;
       ++p;
@@ -240,11 +319,41 @@ void gen(Node *node) {
     std::cout << "  sub rax, rdi" << std::endl;
     break;
   case '*':
-    printf("  imul rdi\n");
+    std::cout << "  imul rdi" << std::endl;
     break;
   case '/':
-    printf("  cqo\n");
-    printf("  idiv rdi\n");
+    std::cout << "  cqo" << std::endl;
+    std::cout << "  idiv rdi" << std::endl;
+    break;
+  case ND_EQ:
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  sete al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
+    break;
+  case ND_NE:
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  setne al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
+    break;
+  case '<':
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  setl al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
+    break;
+  case ND_LE:
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  setle al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
+    break;
+  case '>':
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  setg al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
+    break;
+  case ND_GE:
+    std::cout << "  cmp rax, rdi" << std::endl;
+    std::cout << "  setge al" << std::endl;
+    std::cout << "  movzb rax, al" << std::endl;
     break;
   }
 
