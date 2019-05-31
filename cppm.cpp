@@ -6,7 +6,8 @@
 /*
 # EBNF
 expr = mul ("+" mul | "-" mul)*
-mul  = num ("*" num | "/" num)*
+mul  = term ("*" term | "/" term)*
+term = num | "(" expr ")"
 */
 
 // トークンの型を表す値
@@ -113,25 +114,10 @@ int consume(int ty) {
 }
 
 // パーサー
-Node *num() {
-  if (tokens[pos]->ty() == TK_NUM)
-    return new Node(tokens[pos++]->val());
-
-  error_at(tokens[pos]->input(), "数値ではないトークンです");
-}
-
-Node *mul() {
-  Node *node = num();
-
-  for (;;) {
-    if (consume('*'))
-      node = new Node('*', node, num());
-    else if (consume('/'))
-      node = new Node('/', node, num());
-    else
-      return node;
-  }
-}
+Node *expr();
+Node *mul();
+Node *term();
+Node *num();
 
 Node *expr() {
   Node *node = mul();
@@ -144,6 +130,44 @@ Node *expr() {
     else
       return node;
   }
+}
+
+Node *mul() {
+  Node *node = term();
+
+  for (;;) {
+    if (consume('*'))
+      node = new Node('*', node, term());
+    else if (consume('/'))
+      node = new Node('/', node, term());
+    else
+      return node;
+  }
+}
+
+Node *term() {
+  // 次のトークンが'('なら、"(" expr ")"のはず
+  if (consume('(')) {
+    Node *node = expr();
+    if (!consume(')'))
+      error_at(tokens[pos]->input(),
+               "開きカッコに対応する閉じカッコがありません");
+    return node;
+  }
+
+  // そうでなければ数値のはず
+  if (tokens[pos]->ty() == TK_NUM)
+    return new Node(tokens[pos++]->val());
+
+  error_at(tokens[pos]->input(),
+           "数値でも開きカッコでもないトークンです");
+}
+
+Node *num() {
+  if (tokens[pos]->ty() == TK_NUM)
+    return new Node(tokens[pos++]->val());
+
+  error_at(tokens[pos]->input(), "数値ではないトークンです");
 }
 
 // user_inputが指している文字列を
@@ -160,7 +184,7 @@ void tokenize(char *p) {
     }
 
     // '+', '-' 二項演算子
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
       tokens[i] = new Token(*p, p);
       ++i;
       ++p;
