@@ -63,13 +63,44 @@ Token::Token(int ty, int val, char *input)
   : _ty(ty), _val(val), _input(input) {
 }
 
+// 可変長ベクタ
+class Vector {
+public:
+  // コンストラクタ
+  Vector();
+
+  void push(void *elem);
+
+  // getter
+  void *get(int i) { return _data[i]; }
+  int len() { return _len; }
+
+private:
+  void **_data;
+  int _capacity;
+  int _len;
+};
+
+// コンストラクタ
+Vector::Vector()
+  : _data((void**)::malloc(sizeof(void*) * 16)), _capacity(16), _len(0) {
+}
+
+void Vector::push(void *elem) {
+  if (_capacity == _len) {
+    _capacity *= 2;
+    _data = (void**)::realloc(_data, sizeof(void*) * _capacity);
+  }
+  _data[_len++] = elem;
+}
+
 // 入力プログラム
 char *user_input;
 
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 int pos;
-Token *tokens[100];
+Vector tokens;
 
 // 抽象構文木の型を表す値
 // 1文字の演算子はその演算子そのものを値とする
@@ -110,37 +141,6 @@ Node::Node(int val)
   : _ty(ND_NUM), _val(val) {
 }
 
-// 可変長ベクタ
-class Vector {
-public:
-  // コンストラクタ
-  Vector();
-
-  void push(void *elem);
-
-  // getter
-  void *get(int i) { return _data[i]; }
-  int len() { return _len; }
-
-private:
-  void **_data;
-  int _capacity;
-  int _len;
-};
-
-// コンストラクタ
-Vector::Vector()
-  : _data((void**)::malloc(sizeof(void*) * 16)), _capacity(16), _len(0) {
-}
-
-void Vector::push(void *elem) {
-  if (_capacity == _len) {
-    _capacity *= 2;
-    _data = (void**)::realloc(_data, sizeof(void*) * _capacity);
-  }
-  _data[_len++] = elem;
-}
-
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
@@ -161,7 +161,7 @@ void error_at(char *loc, char *msg) {
 }
 
 int consume(int ty) {
-  if (tokens[pos]->ty() != ty)
+  if (((Token*)tokens.get(pos))->ty() != ty)
     return 0;
   ++pos;
   return 1;
@@ -250,17 +250,17 @@ Node *term() {
   if (consume('(')) {
     Node *node = expr();
     if (!consume(')'))
-      error_at(tokens[pos]->input(),
+      error_at(((Token*)tokens.get(pos))->input(),
                "開きカッコに対応する閉じカッコがありません");
     return node;
   }
 
   // そうでなければ数値のはず
-  if (tokens[pos]->ty() == TK_NUM)
-    return new Node(tokens[pos++]->val());
+  if (((Token*)tokens.get(pos))->ty() == TK_NUM)
+    return new Node(((Token*)tokens.get(pos++))->val());
 
-  std::cerr << " *** " << tokens[pos]->ty() << " *** " << std::endl;
-  error_at(tokens[pos]->input(),
+  std::cerr << " *** " << ((Token*)tokens.get(pos))->ty() << " *** " << std::endl;
+  error_at(((Token*)tokens.get(pos))->input(),
            "数値でも開きカッコでもないトークンです");
 }
 
@@ -279,49 +279,44 @@ void tokenize(char *p) {
 
     // 複数文字 二項演算子
     if (::strncmp(p, "==", 2) == 0) {
-        tokens[i] = new Token(TK_EQ, p);
-      ++i;
+      tokens.push(new Token(TK_EQ, p));
       p += 2;
       continue;
     }
     else if (::strncmp(p, "!=", 2) == 0) {
-        tokens[i] = new Token(TK_NE, p);
-      ++i;
+      tokens.push(new Token(TK_NE, p));
       p += 2;
       continue;
     }
     else if (::strncmp(p, "<=", 2) == 0) {
-        tokens[i] = new Token(TK_LE, p);
-      ++i;
+      tokens.push(new Token(TK_LE, p));
       p += 2;
       continue;
     }
     else if (::strncmp(p, ">=", 2) == 0) {
-        tokens[i] = new Token(TK_GE, p);
-      ++i;
+      tokens.push(new Token(TK_GE, p));
       p += 2;
       continue;
     }
     // 1文字 二項演算子
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' || *p == '<' || *p == '>') {
-      tokens[i] = new Token(*p, p);
-      ++i;
+      tokens.push(new Token(*p, p));
       ++p;
       continue;
     }
 
     // 整数
     if (isdigit(*p)) {
-      tokens[i] = new Token(TK_NUM, std::strtol(p, &p, 10), p);
-      ++i;
+      tokens.push(new Token(TK_NUM, std::strtol(p, &p, 10), p));
       continue;
     }
 
     error_at(p, "トークナイズできません");
   }
 
-  tokens[i] = new Token(TK_EOF, p);
+  tokens.push(new Token(TK_EOF, p));
+  pos = 0;
 }
 
 // コード生成
@@ -438,7 +433,6 @@ int main(int argc, char **argv) {
   std::cout << "main:" << std::endl;
 
   // 抽象構文木を下りながらコード生成
-  pos = 0;
   gen(node);
 
   // スタックトップに式全体の値が残っているはずなので
