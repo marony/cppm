@@ -110,6 +110,38 @@ Node::Node(int val)
   : _ty(ND_NUM), _val(val) {
 }
 
+// 可変長ベクタ
+class Vector {
+public:
+  // コンストラクタ
+  Vector();
+
+  void push(void *elem);
+
+  // getter
+  // これは本当は返しちゃダメ(テストコード用)
+  void **data() { return _data; }
+  int len() { return _len; }
+
+private:
+  void **_data;
+  int _capacity;
+  int _len;
+};
+
+// コンストラクタ
+Vector::Vector()
+  : _data((void**)::malloc(sizeof(void*) * 16)), _capacity(16), _len(0) {
+}
+
+void Vector::push(void *elem) {
+  if (_capacity == _len) {
+    _capacity *= 2;
+    _data = (void**)::realloc(_data, sizeof(void*) * _capacity);
+  }
+  _data[_len++] = elem;
+}
+
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
@@ -360,11 +392,41 @@ void gen(Node *node) {
   std::cout << "  push rax" << std::endl;
 }
 
+// テスト
+void expect(int line, int expected, int actual) {
+  if (expected == actual)
+    return;
+  fprintf(stderr, "%d: %d expected, but got %d\n",
+          line, expected, actual);
+  exit(1);
+}
+
+void runtest() {
+  Vector *vec = new Vector();
+  expect(__LINE__, 0, vec->len());
+
+  for (int i = 0; i < 100; i++)
+    vec->push((void *)i);
+
+  expect(__LINE__, 100, vec->len());
+  expect(__LINE__, 0, (long)vec->data()[0]);
+  expect(__LINE__, 50, (long)vec->data()[50]);
+  expect(__LINE__, 99, (long)vec->data()[99]);
+
+  printf("OK\n");
+}
+
 // まいんちゃん
 int main(int argc, char **argv) {
   if (argc != 2) {
     std::cerr << "引数の個数が正しくありません\n";
     return 1;
+  }
+
+  if (::strcmp(argv[1], "-test") == 0) {
+    // テストの実行
+    runtest();
+    return 0;
   }
 
   // トークナイズしてパースする

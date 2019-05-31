@@ -1,6 +1,7 @@
 cppm: cppm.cpp
 
 test: cppm
+	./cppm -test
 	./test.sh
 
 clean:
