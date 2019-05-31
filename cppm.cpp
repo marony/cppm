@@ -119,8 +119,7 @@ public:
   void push(void *elem);
 
   // getter
-  // これは本当は返しちゃダメ(テストコード用)
-  void **data() { return _data; }
+  void *get(int i) { return _data[i]; }
   int len() { return _len; }
 
 private:
@@ -409,9 +408,9 @@ void runtest() {
     vec->push((void *)i);
 
   expect(__LINE__, 100, vec->len());
-  expect(__LINE__, 0, (long)vec->data()[0]);
-  expect(__LINE__, 50, (long)vec->data()[50]);
-  expect(__LINE__, 99, (long)vec->data()[99]);
+  expect(__LINE__, 0, (long)vec->get(0));
+  expect(__LINE__, 50, (long)vec->get(50));
+  expect(__LINE__, 99, (long)vec->get(99));
 
   printf("OK\n");
 }
