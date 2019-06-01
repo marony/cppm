@@ -5,6 +5,8 @@
 #include "parser.h"
 #include "vector.h"
 
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 int pos;

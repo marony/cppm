@@ -7,6 +7,8 @@
 #include "vector.h"
 #include "codegen.h"
 
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+
 // 入力プログラム
 char *user_input;
 
