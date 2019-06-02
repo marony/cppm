@@ -1,11 +1,50 @@
 #include <iostream>
 
 #include "codegen.h"
+#include "cppm.h"
+
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
+// 左辺値
+// 変数のアドレスをpush
+void gen_lval(Node *node) {
+  if (node->ty() != ND_IDENT)
+    error("代入の左辺値が変数ではありません");
+
+  int offset = ('z' - node->name() + 1) * 8;
+  std::cout << "  mov rax, rbp" << std::endl;
+  std::cout << "  sub rax, " << offset << std::endl;
+  std::cout << "  push rax" << std::endl;
+}
 
 // コード生成
 void gen(Node *node) {
+  // 数値
   if (node->ty() == ND_NUM) {
     std::cout << "  push " << node->val() << std::endl;
+    return;
+  }
+
+  // 識別子
+  // 変数のアドレスから値を取得してpush
+  if (node->ty() == ND_IDENT) {
+    gen_lval(node);
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  mov rax, [rax]" << std::endl;
+    std::cout << "  push rax" << std::endl;
+    return;
+  }
+
+  // 代入
+  // 変数のアドレスへ右辺値を代入
+  if (node->ty() == '=') {
+    gen_lval(node->lhs());
+    gen(node->rhs());
+
+    std::cout << "  pop rdi" << std::endl;
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  mov [rax], rdi" << std::endl;
+    std::cout << "  push rdi" << std::endl;
     return;
   }
 

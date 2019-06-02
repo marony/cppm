@@ -11,6 +11,7 @@
 // 100個以上のトークンは来ないものとする
 int pos;
 Vector tokens;
+Node* code[100];
 
 // コンストラクタ
 Token::Token(int ty, char *input)
@@ -30,6 +31,10 @@ Node::Node(int val)
   : _ty(ND_NUM), _val(val) {
 }
 
+Node::Node(char name)
+  : _ty(ND_IDENT), _name(name) {
+}
+
 int consume(int ty) {
   if (((Token*)tokens.get(pos))->ty() != ty)
     return 0;
@@ -38,7 +43,9 @@ int consume(int ty) {
 }
 
 // パーサー
+Node *stmt();
 Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -47,8 +54,29 @@ Node *unary();
 Node *term();
 Node *num();
 
+void program() {
+  int i = 0;
+  while (((Token*)tokens.get(pos))->ty() != TK_EOF)
+    code[i++] = stmt();
+  code[i] = NULL;
+}
+
+Node *stmt() {
+  Node *node = expr();
+  if (!consume(';'))
+    error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+  return node;
+}
+
 Node *expr() {
+  return assign();
+}
+
+Node *assign() {
   Node *node = equality();
+  if (consume('='))
+    node = new Node('=', node, assign());
+  return node;
 }
 
 Node *equality() {
@@ -125,6 +153,10 @@ Node *term() {
     return node;
   }
 
+  // 識別子
+  if (((Token*)tokens.get(pos))->ty() == TK_IDENT)
+    return new Node(*((Token*)tokens.get(pos++))->input());
+
   // そうでなければ数値のはず
   if (((Token*)tokens.get(pos))->ty() == TK_NUM)
     return new Node(((Token*)tokens.get(pos++))->val());
@@ -170,7 +202,8 @@ void tokenize(char *p) {
     }
     // 1文字 二項演算子
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
-        *p == '(' || *p == ')' || *p == '<' || *p == '>') {
+        *p == '(' || *p == ')' || *p == '<' || *p == '>' ||
+        *p == '=' || *p == ';') {
       tokens.push(new Token(*p, p));
       ++p;
       continue;
@@ -179,6 +212,13 @@ void tokenize(char *p) {
     // 整数
     if (isdigit(*p)) {
       tokens.push(new Token(TK_NUM, std::strtol(p, &p, 10), p));
+      continue;
+    }
+
+    // 識別子
+    if ('a' <= *p && *p <= 'z') {
+      tokens.push(new Token(TK_IDENT, p));
+      ++p;
       continue;
     }
 
