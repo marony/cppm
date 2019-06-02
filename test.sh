@@ -47,5 +47,7 @@ try() {
 # try 1 "0 <= 0"
 # ステップ9：1文字のローカル変数
 try 15 "a = 3; b = 30; c = 5; b - a * c;"
+# ステップ10：return文
+try 15 "a = 3; b = 30; c = 5; return b - a * c;"
 
 echo OK

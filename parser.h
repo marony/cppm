@@ -14,6 +14,7 @@ term       = num | "(" expr ")"
 /*
 program    = stmt*
 stmt       = expr ";"
+             | "return" expr ";"
 expr       = assign
 assign     = equality ("=" assign)?
 equality   = relational ("==" relational | "!=" relational)*
@@ -39,6 +40,7 @@ term       = num | ident | "(" expr ")"
 enum {
   TK_NUM = 256, // 整数トークン
   TK_IDENT,     // 識別子
+  TK_RETURN,    // return
   TK_EQ,        // ==
   TK_NE,        // !=
   TK_LE,        // <=
@@ -69,6 +71,7 @@ private:
 enum {
   ND_NUM = 256, // 整数
   ND_IDENT,     // 識別子
+  ND_RETURN,    // return
   ND_EQ,        // ==
   ND_NE,        // !=
   ND_LE,        // <=

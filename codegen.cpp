@@ -19,6 +19,16 @@ void gen_lval(Node *node) {
 
 // コード生成
 void gen(Node *node) {
+  // return
+  if (node->ty() == ND_RETURN) {
+    gen(node->lhs());
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  mov rsp, rbp" << std::endl;
+    std::cout << "  pop rbp" << std::endl;
+    std::cout << "  ret" << std::endl;
+    return;
+  }
+
   // 数値
   if (node->ty() == ND_NUM) {
     std::cout << "  push " << node->val() << std::endl;

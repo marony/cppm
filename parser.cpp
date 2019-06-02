@@ -13,6 +13,13 @@ int pos;
 Vector tokens;
 Node* code[100];
 
+int is_alnum(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9') ||
+         (c == '_');
+}
+
 // コンストラクタ
 Token::Token(int ty, char *input)
   : _ty(ty), _val(0), _input(input) {
@@ -62,7 +69,14 @@ void program() {
 }
 
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+
+  if (consume(TK_RETURN)) {
+    node = new Node(ND_RETURN, expr(), NULL);
+  } else {
+    node = expr();
+  }
+  
   if (!consume(';'))
     error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
   return node;
@@ -212,6 +226,13 @@ void tokenize(char *p) {
     // 整数
     if (isdigit(*p)) {
       tokens.push(new Token(TK_NUM, std::strtol(p, &p, 10), p));
+      continue;
+    }
+
+    // return
+    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+      tokens.push(new Token(TK_RETURN, p));
+      p += 6;
       continue;
     }
 
