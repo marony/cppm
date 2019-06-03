@@ -1,5 +1,7 @@
 #pragma once
 
+#include "map.h"
+
 /*
 # EBNF
 expr       = equality
@@ -54,15 +56,18 @@ public:
   // コンストラクタ
   Token(int ty, char *input);
   Token(int ty, int val, char *input);
+  Token(char* name, char *input);
 
   // getter
   int ty() { return _ty; }
   int val() { return _val; }
+  char *name() { return _name; }
   char *input() { return _input; }
 
 private:
   int _ty;      // トークンの型
   int _val;     // tyがTK_NUMの場合、その数値
+  char *_name;  // tyがTK_IDENTの場合、その名前
   char *_input; // トークン文字列（エラーメッセージ用）
 };
 
@@ -84,23 +89,26 @@ public:
   // コンストラクタ
   Node(int ty, Node *lhs, Node *rhs);
   Node(int val);
-  Node(char name);
+  Node(char* name, int offset);
 
   // getter
   int ty() { return _ty; }
   Node *lhs() { return _lhs; }
   Node *rhs() { return _rhs; }
   int val() { return _val; }
-  char name() { return _name; }
+  char *name() { return _name; }
+  int offset() { return _offset; }
 
 private:
-  int _ty;    // 演算子かND_NUM
-  Node *_lhs; // 左辺
-  Node *_rhs; // 右辺
-  int _val;   // tyがND_NUMの場合のみ使う
-  char _name; // tyがND_IDENTの場合のみ使う
+  int _ty;     // 演算子かND_NUM
+  Node *_lhs;  // 左辺
+  Node *_rhs;  // 右辺
+  int _val;    // tyがND_NUMの場合のみ使う
+  char *_name; // tyがND_IDENTの場合のみ使う
+  int _offset; // tyがND_IDENTの場合のみ使う
 };
 
 extern void tokenize(char *p);
 extern void program();
 extern Node* code[];
+extern Map map;

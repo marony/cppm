@@ -98,7 +98,8 @@ int main(int argc, char **argv) {
   // 変数26個分の領域を確保する
   std::cout << "  push rbp" << std::endl;
   std::cout << "  mov rbp, rsp" << std::endl;
-  std::cout << "  sub rsp, 208" << std::endl;
+  int identSize = map.len() * 8;
+  std::cout << "  sub rsp, " << identSize << std::endl;
 
   // 先頭の式から順にコード生成
   for (int i = 0; code[i]; ++i) {

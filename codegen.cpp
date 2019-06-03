@@ -11,7 +11,7 @@ void gen_lval(Node *node) {
   if (node->ty() != ND_IDENT)
     error("代入の左辺値が変数ではありません");
 
-  int offset = ('z' - node->name() + 1) * 8;
+  int offset = node->offset() * 8;
   std::cout << "  mov rax, rbp" << std::endl;
   std::cout << "  sub rax, " << offset << std::endl;
   std::cout << "  push rax" << std::endl;

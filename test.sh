@@ -49,5 +49,7 @@ try 1 "return 0 <= 0;"
 try 15 "a = 3; b = 30; c = 5; b - a * c;"
 # ステップ10：return文
 try 15 "a = 3; b = 30; c = 5; return b - a * c;"
+# ステップ11：複数文字のローカル変数
+try 15 "foo = 3; bar = 30; baz = 5; return bar - foo * baz;"
 
 echo OK

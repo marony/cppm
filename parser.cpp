@@ -6,17 +6,25 @@
 #include "vector.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 int pos;
 Vector tokens;
+Map map;
 Node* code[100];
 
 int is_alnum(char c) {
   return ('a' <= c && c <= 'z') ||
          ('A' <= c && c <= 'Z') ||
          ('0' <= c && c <= '9') ||
+         (c == '_');
+}
+
+int is_alpha(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
          (c == '_');
 }
 
@@ -29,6 +37,10 @@ Token::Token(int ty, int val, char *input)
   : _ty(ty), _val(val), _input(input) {
 }
 
+Token::Token(char* name, char *input)
+  : _ty(TK_IDENT), _name(name), _input(input) {
+}
+
 // コンストラクタ
 Node::Node(int ty, Node *lhs, Node *rhs)
   : _ty(ty), _lhs(lhs), _rhs(rhs) {
@@ -38,8 +50,8 @@ Node::Node(int val)
   : _ty(ND_NUM), _val(val) {
 }
 
-Node::Node(char name)
-  : _ty(ND_IDENT), _name(name) {
+Node::Node(char *name, int offset)
+  : _ty(ND_IDENT), _name(name), _offset(offset) {
 }
 
 int consume(int ty) {
@@ -169,7 +181,15 @@ Node *term() {
 
   // 識別子
   if (((Token*)tokens.get(pos))->ty() == TK_IDENT)
-    return new Node(*((Token*)tokens.get(pos++))->input());
+  {
+    char *name = ((Token*)tokens.get(pos))->name();
+    void *id = map.get(name);
+    if (id == NULL) {
+      id = (void*)(8 * (map.len() + 1));
+      map.put(name, id);
+    }
+    return new Node(((Token*)tokens.get(pos++))->name(), (int)(long)id);
+  }
 
   // そうでなければ数値のはず
   if (((Token*)tokens.get(pos))->ty() == TK_NUM)
@@ -237,9 +257,13 @@ void tokenize(char *p) {
     }
 
     // 識別子
-    if ('a' <= *p && *p <= 'z') {
-      tokens.push(new Token(TK_IDENT, p));
-      ++p;
+    if (is_alpha(*p)) {
+      char *q = p + 1;
+      while (is_alnum(*q)) {
+        ++q;
+      }
+      tokens.push(new Token(::strndup(p, q - p), p));
+      p = q;
       continue;
     }
 
