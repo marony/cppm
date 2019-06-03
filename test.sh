@@ -63,5 +63,7 @@ try 2 "a = 5; if (2 > 1) a = 2; else a = 3; return a;"
 try 3 "a = 5; if (2 < 1) a = 2; else a = 3; return a;"
 # while
 try 0 "i = 5; while (i > 0) i = i - 1; return i;"
+# for
+try 6 "a = 1; for (i = 0; i < 5; i = i + 1) a = a + 1; return a;"
 
 echo OK

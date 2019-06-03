@@ -130,10 +130,8 @@ Node *stmt() {
       if (!consume(';'))
         error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
     }
-    if (!consume(';')) {
+    if (!consume(')')) {
       node3 = expr();
-      if (!consume(';'))
-        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
     }
     if (!consume(')'))
       error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");

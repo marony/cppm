@@ -70,6 +70,18 @@ void gen(Node *node) {
     std::cout << ".Lend" << labelNo2 << ":" << std::endl;
     return;
   } else if (node->ty() == ND_FOR) {
+    int labelNo1 = newLabelNo();
+    int labelNo2 = newLabelNo();
+    gen(node->lhs());
+    std::cout << ".Lbegin" << labelNo1 << ":" << std::endl;
+    gen(node->rhs());
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  cmp rax, 0" << std::endl;
+    std::cout << "  je  .Lend" << labelNo2 << std::endl;
+    gen(node->node2());
+    gen(node->node1());
+    std::cout << "  jmp .Lbegin" << labelNo1 << std::endl;
+    std::cout << ".Lend" << labelNo2 << ":" << std::endl;
     return;
   }
 
