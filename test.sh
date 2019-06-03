@@ -55,9 +55,13 @@ try 3 "foo = 1; bar = 2; baz = 3; return (foo == 1) + (bar == 2) + (baz == 3);"
 try 10 "foo = 1; foo = foo + 1; foo = foo + 5; foo = 3 + foo; return foo;"
 try 0 "a = 0; return a;"
 # ステップ12: 制御構文を足す
+# if
 try 2 "a = 5; if (2 > 1) a = 2; return a;"
 try 5 "a = 5; if (2 < 1) a = 2; return a;"
+# if else
 try 2 "a = 5; if (2 > 1) a = 2; else a = 3; return a;"
 try 3 "a = 5; if (2 < 1) a = 2; else a = 3; return a;"
+# while
+try 0 "i = 5; while (i > 0) i = i - 1; return i;"
 
 echo OK
