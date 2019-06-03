@@ -40,6 +40,7 @@ void gen(Node *node) {
     std::cout << "  cmp rax, 0" << std::endl;
     std::cout << "  push rax" << std::endl; // 動かないから入れてみた
     std::cout << "  je  .Lend" << labelNo << std::endl;
+    // ここにpop入れないとスタックずれてるか？
     gen(node->rhs());
     std::cout << ".Lend" << labelNo << ":" << std::endl;
     return;
