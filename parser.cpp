@@ -54,6 +54,14 @@ Node::Node(char *name, int offset)
   : _ty(ND_IDENT), _name(name), _offset(offset) {
 }
 
+Node::Node(int ty, Node *lhs, Node *rhs, Node *node1)
+  : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1) {
+}
+
+Node::Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2)
+  : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1), _node2(node2) {
+}
+
 int consume(int ty) {
   if (((Token*)tokens.get(pos))->ty() != ty)
     return 0;
@@ -85,6 +93,51 @@ Node *stmt() {
 
   if (consume(TK_RETURN)) {
     node = new Node(ND_RETURN, expr(), NULL);
+  } else if (consume(TK_IF)) {
+    if (!consume('('))
+      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+    Node *node1 = expr();
+    if (!consume(')'))
+      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+    Node *node2 = stmt();
+    if (!consume(TK_ELSE)) {
+      // if
+      return new Node(ND_IF, node1, node2);
+    } else {
+      // if else
+      return new Node(ND_IFELSE, node1, node2, stmt());
+    }
+  } else if (consume(TK_WHILE)) {
+    if (!consume('('))
+      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+    Node *node1 = expr();
+    if (!consume(')'))
+      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+    return new Node(ND_WHILE, node1, stmt());
+  } else if (consume(TK_FOR)) {
+    if (!consume('('))
+      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+    Node *node1 = NULL;
+    Node *node2 = NULL;
+    Node *node3 = NULL;
+    if (!consume(';')) {
+      node1 = expr();
+      if (!consume(';'))
+        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+    }
+    if (!consume(';')) {
+      node2 = expr();
+      if (!consume(';'))
+        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+    }
+    if (!consume(';')) {
+      node3 = expr();
+      if (!consume(';'))
+        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+    }
+    if (!consume(')'))
+      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+    return new Node(ND_FOR, node1, node2, node3, stmt());
   } else {
     node = expr();
   }
@@ -253,6 +306,34 @@ void tokenize(char *p) {
     if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
       tokens.push(new Token(TK_RETURN, p));
       p += 6;
+      continue;
+    }
+
+    // if
+    if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
+      tokens.push(new Token(TK_IF, p));
+      p += 2;
+      continue;
+    }
+
+    // else
+    if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
+      tokens.push(new Token(TK_ELSE, p));
+      p += 4;
+      continue;
+    }
+
+    // while
+    if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+      tokens.push(new Token(TK_WHILE, p));
+      p += 5;
+      continue;
+    }
+
+    // for
+    if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
+      tokens.push(new Token(TK_FOR, p));
+      p += 3;
       continue;
     }
 

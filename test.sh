@@ -12,7 +12,7 @@ try() {
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
-    echo "$expected expected, but got $actual"
+    echo "$expected expected, but got $actual <= $input"
     exit 1
   fi
 }
@@ -51,5 +51,13 @@ try 15 "a = 3; b = 30; c = 5; b - a * c;"
 try 15 "a = 3; b = 30; c = 5; return b - a * c;"
 # ステップ11：複数文字のローカル変数
 try 15 "foo = 3; bar = 30; baz = 5; return bar - foo * baz;"
+try 3 "foo = 1; bar = 2; baz = 3; return (foo == 1) + (bar == 2) + (baz == 3);"
+try 10 "foo = 1; foo = foo + 1; foo = foo + 5; foo = 3 + foo; return foo;"
+try 0 "a = 0; return a;"
+# ステップ12: 制御構文を足す
+try 2 "a = 5; if (2 > 1) a = 2; return a;"
+try 5 "a = 5; if (2 < 1) a = 2; return a;"
+try 2 "a = 5; if (2 > 1) a = 2; else a = 3; return a;"
+try 3 "a = 5; if (2 < 1) a = 2; else a = 3; return a;"
 
 echo OK

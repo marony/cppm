@@ -4,19 +4,14 @@
 
 /*
 # EBNF
-expr       = equality
-equality   = relational ("==" relational | "!=" relational)*
-relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-add        = mul ("+" mul | "-" mul)*
-mul        = unary ("*" unary | "/" unary)*
-unary      = ("+" | "-")? term
-term       = num | "(" expr ")"
-*/
-
-/*
 program    = stmt*
 stmt       = expr ";"
-             | "return" expr ";"
+program = stmt*
+stmt    = expr ";"
+        | "if" "(" expr ")" stmt ("else" stmt)?
+        | "while" "(" expr ")" stmt
+        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+        | "return" expr ";"
 expr       = assign
 assign     = equality ("=" assign)?
 equality   = relational ("==" relational | "!=" relational)*
@@ -42,6 +37,10 @@ term       = num | ident | "(" expr ")"
 enum {
   TK_NUM = 256, // 整数トークン
   TK_IDENT,     // 識別子
+  TK_IF,        // if
+  TK_ELSE,      // else
+  TK_WHILE,     // while
+  TK_FOR,       // for
   TK_RETURN,    // return
   TK_EQ,        // ==
   TK_NE,        // !=
@@ -76,6 +75,10 @@ private:
 enum {
   ND_NUM = 256, // 整数
   ND_IDENT,     // 識別子
+  ND_IF,        // if
+  ND_IFELSE,    // if else
+  ND_WHILE,     // while
+  ND_FOR,       // for
   ND_RETURN,    // return
   ND_EQ,        // ==
   ND_NE,        // !=
@@ -90,6 +93,8 @@ public:
   Node(int ty, Node *lhs, Node *rhs);
   Node(int val);
   Node(char* name, int offset);
+  Node(int ty, Node *lhs, Node *rhs, Node *node1);
+  Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2);
 
   // getter
   int ty() { return _ty; }
@@ -98,14 +103,18 @@ public:
   int val() { return _val; }
   char *name() { return _name; }
   int offset() { return _offset; }
+  Node *node1() { return _node1; }
+  Node *node2() { return _node2; }
 
 private:
-  int _ty;     // 演算子かND_NUM
-  Node *_lhs;  // 左辺
-  Node *_rhs;  // 右辺
-  int _val;    // tyがND_NUMの場合のみ使う
-  char *_name; // tyがND_IDENTの場合のみ使う
-  int _offset; // tyがND_IDENTの場合のみ使う
+  int _ty;      // 演算子かND_NUM
+  Node *_lhs;   // 左辺
+  Node *_rhs;   // 右辺
+  int _val;     // tyがND_NUMの場合のみ使う
+  char *_name;  // tyがND_IDENTの場合のみ使う
+  int _offset;  // tyがND_IDENTの場合のみ使う
+  Node *_node1; // tyがND_IFELSE, ND_FORの場合のみ使う
+  Node *_node2; // tyがND_FORの場合のみ使う
 };
 
 extern void tokenize(char *p);

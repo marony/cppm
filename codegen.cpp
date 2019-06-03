@@ -11,10 +11,16 @@ void gen_lval(Node *node) {
   if (node->ty() != ND_IDENT)
     error("代入の左辺値が変数ではありません");
 
-  int offset = node->offset() * 8;
+  int offset = node->offset();
   std::cout << "  mov rax, rbp" << std::endl;
   std::cout << "  sub rax, " << offset << std::endl;
   std::cout << "  push rax" << std::endl;
+}
+
+int labelNo = 0;
+
+int newLabelNo() {
+  return ++labelNo;
 }
 
 // コード生成
@@ -26,6 +32,33 @@ void gen(Node *node) {
     std::cout << "  mov rsp, rbp" << std::endl;
     std::cout << "  pop rbp" << std::endl;
     std::cout << "  ret" << std::endl;
+    return;
+  } else if (node->ty() == ND_IF) {
+    int labelNo = newLabelNo();
+    gen(node->lhs());
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  cmp rax, 0" << std::endl;
+    std::cout << "  push rax" << std::endl; // 動かないから入れてみた
+    std::cout << "  je  .Lend" << labelNo << std::endl;
+    gen(node->rhs());
+    std::cout << ".Lend" << labelNo << ":" << std::endl;
+    return;
+  } else if (node->ty() == ND_IFELSE) {
+    int labelNo1 = newLabelNo();
+    int labelNo2 = newLabelNo();
+    gen(node->lhs());
+    std::cout << "  pop rax" << std::endl;
+    std::cout << "  cmp rax, 0" << std::endl;
+    std::cout << "  je  .Lelse" << labelNo1 << std::endl;
+    gen(node->rhs());
+    std::cout << "  jmp .Lend" << labelNo2 << std::endl;
+    std::cout << ".Lelse" << labelNo1 << ":" << std::endl;
+    gen(node->node1());
+    std::cout << ".Lend" << labelNo2 << ":" << std::endl;
+    return;
+  } else if (node->ty() == ND_WHILE) {
+    return;
+  } else if (node->ty() == ND_FOR) {
     return;
   }
 
