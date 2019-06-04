@@ -33,6 +33,15 @@ void error_at(char *loc, char *msg) {
   exit(1);
 }
 
+// デバッグ出力
+// printfと同じ引数を取る
+void debug(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+}
+
 // テスト
 void expect(int line, int expected, int actual) {
   if (expected == actual)
@@ -103,6 +112,7 @@ int main(int argc, char **argv) {
 
   // 先頭の式から順にコード生成
   for (int i = 0; code[i]; ++i) {
+    debug("%d\n", code[i]->ty());
     gen(code[i]);
 
     // 式の評価結果としてスタックに一つの値が残っている

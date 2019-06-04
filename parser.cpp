@@ -3,7 +3,6 @@
 
 #include "cppm.h"
 #include "parser.h"
-#include "vector.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
@@ -62,6 +61,10 @@ Node::Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2)
   : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1), _node2(node2) {
 }
 
+Node::Node(Vector nodes)
+  : _ty(ND_BLOCK), _nodes(nodes) {
+}
+
 int consume(int ty) {
   if (((Token*)tokens.get(pos))->ty() != ty)
     return 0;
@@ -91,9 +94,19 @@ void program() {
 Node *stmt() {
   Node *node;
 
-  if (consume(TK_RETURN)) {
+  if (consume('{')) {
+    // ブロック
+    Vector nodes;
+    while (!consume('}')) {
+      Node *node = stmt();
+      nodes.push(node);
+    }
+    return new Node(nodes);
+  } else if (consume(TK_RETURN)) {
+    // return
     node = new Node(ND_RETURN, expr(), NULL);
   } else if (consume(TK_IF)) {
+    // if
     if (!consume('('))
       error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
     Node *node1 = expr();
@@ -108,6 +121,7 @@ Node *stmt() {
       return new Node(ND_IFELSE, node1, node2, stmt());
     }
   } else if (consume(TK_WHILE)) {
+    // while
     if (!consume('('))
       error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
     Node *node1 = expr();
@@ -115,6 +129,7 @@ Node *stmt() {
       error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
     return new Node(ND_WHILE, node1, stmt());
   } else if (consume(TK_FOR)) {
+    // for
     if (!consume('('))
       error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
     Node *node1 = NULL;
@@ -137,6 +152,7 @@ Node *stmt() {
       error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
     return new Node(ND_FOR, node1, node2, node3, stmt());
   } else {
+    // expr
     node = expr();
   }
   
@@ -246,7 +262,7 @@ Node *term() {
   if (((Token*)tokens.get(pos))->ty() == TK_NUM)
     return new Node(((Token*)tokens.get(pos++))->val());
 
-  std::cerr << " *** " << ((Token*)tokens.get(pos))->ty() << " *** " << std::endl;
+  debug("%d\n", ((Token*)tokens.get(pos))->ty());
   error_at(((Token*)tokens.get(pos))->input(),
            "数値でも開きカッコでもないトークンです");
 }
@@ -287,8 +303,8 @@ void tokenize(char *p) {
     }
     // 1文字 二項演算子
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
-        *p == '(' || *p == ')' || *p == '<' || *p == '>' ||
-        *p == '=' || *p == ';') {
+        *p == '{' || *p == '}' || *p == '(' || *p == ')' ||
+        *p == '<' || *p == '>' || *p == '=' || *p == ';') {
       tokens.push(new Token(*p, p));
       ++p;
       continue;

@@ -1,13 +1,13 @@
 #pragma once
 
+#include "vector.h"
 #include "map.h"
 
 /*
 # EBNF
-program    = stmt*
-stmt       = expr ";"
 program = stmt*
 stmt    = expr ";"
+        | "{" stmt* "}"
         | "if" "(" expr ")" stmt ("else" stmt)?
         | "while" "(" expr ")" stmt
         | "for" "(" expr? ";" expr? ";" expr? ")" stmt
@@ -64,10 +64,10 @@ public:
   char *input() { return _input; }
 
 private:
-  int _ty;      // トークンの型
-  int _val;     // tyがTK_NUMの場合、その数値
-  char *_name;  // tyがTK_IDENTの場合、その名前
-  char *_input; // トークン文字列（エラーメッセージ用）
+  int _ty;       // トークンの型
+  int _val;      // tyがTK_NUMの場合、その数値
+  char *_name;   // tyがTK_IDENTの場合、その名前
+  char *_input;  // トークン文字列（エラーメッセージ用）
 };
 
 // 抽象構文木の型を表す値
@@ -75,6 +75,7 @@ private:
 enum {
   ND_NUM = 256, // 整数
   ND_IDENT,     // 識別子
+  ND_BLOCK,     // ブロック
   ND_IF,        // if
   ND_IFELSE,    // if else
   ND_WHILE,     // while
@@ -95,6 +96,7 @@ public:
   Node(char* name, int offset);
   Node(int ty, Node *lhs, Node *rhs, Node *node1);
   Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2);
+  Node(Vector nodes);
 
   // getter
   int ty() { return _ty; }
@@ -105,16 +107,18 @@ public:
   int offset() { return _offset; }
   Node *node1() { return _node1; }
   Node *node2() { return _node2; }
+  Vector nodes() { return _nodes; }
 
 private:
-  int _ty;      // 演算子かND_NUM
-  Node *_lhs;   // 左辺
-  Node *_rhs;   // 右辺
-  int _val;     // tyがND_NUMの場合のみ使う
-  char *_name;  // tyがND_IDENTの場合のみ使う
-  int _offset;  // tyがND_IDENTの場合のみ使う
-  Node *_node1; // tyがND_IFELSE, ND_FORの場合のみ使う
-  Node *_node2; // tyがND_FORの場合のみ使う
+  int _ty;       // 演算子かND_NUM
+  Node *_lhs;    // 左辺
+  Node *_rhs;    // 右辺
+  int _val;      // tyがND_NUMの場合のみ使う
+  char *_name;   // tyがND_IDENTの場合のみ使う
+  int _offset;   // tyがND_IDENTの場合のみ使う
+  Node *_node1;  // tyがND_IFELSE, ND_FORの場合のみ使う
+  Node *_node2;  // tyがND_FORの場合のみ使う
+  Vector _nodes; // tyがND_BLOCKの場合、ブロックの中のstmts
 };
 
 extern void tokenize(char *p);

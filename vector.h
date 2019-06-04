@@ -6,6 +6,8 @@ public:
   // コンストラクタ
   Vector();
 
+  // NOTE: デストラクタを作ったらコピーコンストラクタも作ること
+
   void push(void *elem);
 
   // getter
