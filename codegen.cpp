@@ -52,9 +52,10 @@ void gen(Node *node) {
     gen(node->lhs());
     std::cout << "  pop rax" << std::endl;
     std::cout << "  cmp rax, 0" << std::endl;
-    std::cout << "  push rax" << std::endl; // 動かないから入れてみた(ifに入らなかった時にスタックずれる)
+    std::cout << "  push rax" << std::endl; // NOTE: 動かないから入れてみた(ifに入らなかった時にスタックずれる気がする)
     std::cout << "  je  .Lend" << labelNo << std::endl;
-    // ここにpop入れないとスタックずれてるか？
+    // NOTE: ここにもpop入れないとスタックずれてる気がする
+    std::cout << "  pop rax" << std::endl;
     debug("if");
     gen(node->rhs());
     std::cout << ".Lend" << labelNo << ":" << std::endl;
