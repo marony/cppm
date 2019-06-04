@@ -133,6 +133,16 @@ void gen(Node *node) {
     return;
   }
 
+  // 関数
+  if (node->ty() == ND_FUNC) {
+    debug("function");
+    std::cout << "  call " << node->name() << std::endl;
+    std::cout << "  push rax" << std::endl;
+    // TODO: 引数の処理
+    debug("noitcnuf");
+    return;
+  }
+
   // 代入
   // 変数のアドレスへ右辺値を代入
   if (node->ty() == '=') {

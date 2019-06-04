@@ -45,12 +45,12 @@ Node::Node(int ty, Node *lhs, Node *rhs)
   : _ty(ty), _lhs(lhs), _rhs(rhs) {
 }
 
-Node::Node(int val)
-  : _ty(ND_NUM), _val(val) {
+Node::Node(int ty, int val)
+  : _ty(ty), _val(val) {
 }
 
-Node::Node(char *name, int offset)
-  : _ty(ND_IDENT), _name(name), _offset(offset) {
+Node::Node(int ty, char *name, int offset)
+  : _ty(ty), _name(name), _offset(offset) {
 }
 
 Node::Node(int ty, Node *lhs, Node *rhs, Node *node1)
@@ -61,8 +61,12 @@ Node::Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2)
   : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1), _node2(node2) {
 }
 
-Node::Node(Vector nodes)
-  : _ty(ND_BLOCK), _nodes(nodes) {
+Node::Node(int ty, Vector nodes)
+  : _ty(ty), _nodes(nodes) {
+}
+
+Node::Node(int ty, char *name, Vector nodes)
+  : _ty(ty), _name(name), _nodes(nodes) {
 }
 
 int consume(int ty) {
@@ -101,7 +105,7 @@ Node *stmt() {
       Node *node = stmt();
       nodes.push(node);
     }
-    return new Node(nodes);
+    return new Node(ND_BLOCK, nodes);
   } else if (consume(TK_RETURN)) {
     // return
     node = new Node(ND_RETURN, expr(), NULL);
@@ -232,7 +236,7 @@ Node *unary() {
   if (consume('+'))
     return term();
   if (consume('-')) // "0 - term"
-    return new Node('-', new Node(0), term());
+    return new Node('-', new Node(ND_NUM, 0), term());
   return term();
 }
 
@@ -255,12 +259,22 @@ Node *term() {
       id = (void*)(8 * (map.len() + 1));
       map.put(name, id);
     }
-    return new Node(((Token*)tokens.get(pos++))->name(), (int)(long)id);
+    Node *node = new Node(ND_IDENT, ((Token*)tokens.get(pos++))->name(), (int)(long)id);
+    // 関数
+    if (consume('(')) {
+      Vector nodes;
+      while (!consume(',') && !consume(')')) {
+        Node *node = expr();
+        nodes.push(node);
+      }
+      return new Node(ND_FUNC, node->name(), nodes);
+    }
+    return node;
   }
 
   // そうでなければ数値のはず
   if (((Token*)tokens.get(pos))->ty() == TK_NUM)
-    return new Node(((Token*)tokens.get(pos++))->val());
+    return new Node(ND_NUM, ((Token*)tokens.get(pos++))->val());
 
   debug("%d\n", ((Token*)tokens.get(pos))->ty());
   error_at(((Token*)tokens.get(pos))->input(),
@@ -304,7 +318,8 @@ void tokenize(char *p) {
     // 1文字 二項演算子
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '{' || *p == '}' || *p == '(' || *p == ')' ||
-        *p == '<' || *p == '>' || *p == '=' || *p == ';') {
+        *p == '<' || *p == '>' || *p == '=' || *p == ';' ||
+        *p == ',') {
       tokens.push(new Token(*p, p));
       ++p;
       continue;

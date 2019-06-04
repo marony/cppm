@@ -19,7 +19,9 @@ relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
 unary      = ("+" | "-")? term
-term       = num | ident | "(" expr ")"
+term       = num
+           | ident ("(" ")")?
+           | "(" expr ")"
 */
 
 /*
@@ -75,6 +77,7 @@ private:
 enum {
   ND_NUM = 256, // 整数
   ND_IDENT,     // 識別子
+  ND_FUNC,      // 関数
   ND_BLOCK,     // ブロック
   ND_IF,        // if
   ND_IFELSE,    // if else
@@ -92,11 +95,12 @@ class Node {
 public:
   // コンストラクタ
   Node(int ty, Node *lhs, Node *rhs);
-  Node(int val);
-  Node(char* name, int offset);
+  Node(int ty, int val);
+  Node(int ty, char* name, int offset);
   Node(int ty, Node *lhs, Node *rhs, Node *node1);
   Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2);
-  Node(Vector nodes);
+  Node(int ty, Vector nodes);
+  Node(int ty, char *name, Vector nodes);
 
   // getter
   int ty() { return _ty; }
