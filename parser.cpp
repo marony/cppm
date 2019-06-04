@@ -264,15 +264,12 @@ Node *term() {
     if (consume('(')) {
       Vector nodes;
       // FIXME: 美しくない
-      if (consume(')')) {
-        // 引数なし
-      } else {
-        Node *node = expr();
-        nodes.push(node);
-        while (consume(',')) {
-          node = expr();
+      if (!consume(')')) {
+        // 引数の処理
+        do {
+          Node *node = expr();
           nodes.push(node);
-        }
+        } while (consume(','));
         if (!consume(')'))
           error_at(((Token*)tokens.get(pos))->input(),
                   "開きカッコに対応する閉じカッコがありません");
