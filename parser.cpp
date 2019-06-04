@@ -263,9 +263,19 @@ Node *term() {
     // 関数
     if (consume('(')) {
       Vector nodes;
-      while (!consume(',') && !consume(')')) {
+      // FIXME: 美しくない
+      if (consume(')')) {
+        // 引数なし
+      } else {
         Node *node = expr();
         nodes.push(node);
+        while (consume(',')) {
+          node = expr();
+          nodes.push(node);
+        }
+        if (!consume(')'))
+          error_at(((Token*)tokens.get(pos))->input(),
+                  "開きカッコに対応する閉じカッコがありません");
       }
       return new Node(ND_FUNC, node->name(), nodes);
     }

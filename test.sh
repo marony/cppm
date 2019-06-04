@@ -73,5 +73,6 @@ try 21 "a = 5; if (2 > 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } ret
 try 29 "a = 5; if (2 < 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a;"
 # ステップ14: 関数の呼び出しに対応する
 try 5 "return test1();"
+try 5 "return test1(2, 3);"
 
 echo OK
