@@ -1,8 +1,9 @@
 #include <iostream>
 #include <string.h>
 
-#include "cppm.h"
 #include "parser.h"
+#include "cppm.h"
+#include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
@@ -61,12 +62,12 @@ Node::Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2)
   : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1), _node2(node2) {
 }
 
-Node::Node(int ty, Vector nodes)
-  : _ty(ty), _nodes(nodes) {
+Node::Node(int ty, char *name, Vector *nodes)
+  : _ty(ty), _name(name), _nodes(nodes) {
 }
 
-Node::Node(int ty, char *name, Vector nodes)
-  : _ty(ty), _name(name), _nodes(nodes) {
+Node::Node(int ty, char *name, Vector *nodes, Node *node)
+  : _ty(ty), _name(name), _nodes(nodes), _lhs(node) {
 }
 
 int consume(int ty) {
@@ -77,6 +78,7 @@ int consume(int ty) {
 }
 
 // パーサー
+Node *defin();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -90,22 +92,59 @@ Node *num();
 
 void program() {
   int i = 0;
-  while (((Token*)tokens.get(pos))->ty() != TK_EOF)
-    code[i++] = stmt();
+  while (((Token*)tokens.get(pos))->ty() != TK_EOF) {
+    code[i++] = defin();
+  }
   code[i] = NULL;
 }
 
+Node *defin() {
+  debug("defin: %d", ((Token*)tokens.get(pos))->ty());
+  if (!consume(TK_IDENT))
+    error_at(((Token*)tokens.get(pos))->input(), "関数定義がありません");
+  // 関数定義
+  char *name = ((Token*)tokens.get(pos - 1))->name();
+  if (!consume('('))
+    error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+  Vector *nodes = new Vector();
+  if (!consume(')')) {
+    // 引数の処理
+    do {
+      if (((Token*)tokens.get(pos))->ty() == TK_IDENT) {
+        char *name = ((Token*)tokens.get(pos++))->name();
+        void *id = map.get(name);
+        if (id == NULL) {
+          id = (void*)(8 * (map.len() + 1));
+          map.put(name, id);
+        }
+        Node *node = new Node(ND_IDENT, name, (int)(long)id);
+        nodes->push(node);
+      }
+      else
+        error_at(((Token*)tokens.get(pos))->input(),
+                "関数定義の引数がありません");
+    } while (consume(','));
+    if (!consume(')'))
+      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+  }
+  if (((Token*)tokens.get(pos))->ty() != '{')
+    error_at(((Token*)tokens.get(pos))->input(), "関数定義の'{'がありません");
+  Node *block = stmt();
+  return new Node(ND_FDEFIN, name, nodes, block);
+}
+
 Node *stmt() {
+  debug("stmt: %d", ((Token*)tokens.get(pos))->ty());
   Node *node;
 
   if (consume('{')) {
     // ブロック
-    Vector nodes;
+    Vector *nodes = new Vector();
     while (!consume('}')) {
       Node *node = stmt();
-      nodes.push(node);
+      nodes->push(node);
     }
-    return new Node(ND_BLOCK, nodes);
+    return new Node(ND_BLOCK, "", nodes);
   } else if (consume(TK_RETURN)) {
     // return
     node = new Node(ND_RETURN, expr(), NULL);
@@ -166,10 +205,12 @@ Node *stmt() {
 }
 
 Node *expr() {
+  debug("expr: %d", ((Token*)tokens.get(pos))->ty());
   return assign();
 }
 
 Node *assign() {
+  debug("assign: %d", ((Token*)tokens.get(pos))->ty());
   Node *node = equality();
   if (consume('='))
     node = new Node('=', node, assign());
@@ -177,6 +218,7 @@ Node *assign() {
 }
 
 Node *equality() {
+  debug("equality: %d", ((Token*)tokens.get(pos))->ty());
   Node *node = relational();
 
   for (;;) {
@@ -190,6 +232,7 @@ Node *equality() {
 }
 
 Node *relational() {
+  debug("relational: %d", ((Token*)tokens.get(pos))->ty());
   Node *node = add();
 
   for (;;) {
@@ -207,6 +250,7 @@ Node *relational() {
 }
 
 Node *add() {
+  debug("add: %d", ((Token*)tokens.get(pos))->ty());
   Node *node = mul();
 
   for (;;) {
@@ -220,6 +264,7 @@ Node *add() {
 }
 
 Node *mul() {
+  debug("mul: %d", ((Token*)tokens.get(pos))->ty());
   Node *node = unary();
 
   for (;;) {
@@ -233,6 +278,7 @@ Node *mul() {
 }
 
 Node *unary() {
+  debug("unary: %d", ((Token*)tokens.get(pos))->ty());
   if (consume('+'))
     return term();
   if (consume('-')) // "0 - term"
@@ -241,6 +287,7 @@ Node *unary() {
 }
 
 Node *term() {
+  debug("term: %d", ((Token*)tokens.get(pos))->ty());
   // 次のトークンが'('なら、"(" expr ")"のはず
   if (consume('(')) {
     Node *node = expr();
@@ -253,30 +300,30 @@ Node *term() {
   // 識別子
   if (((Token*)tokens.get(pos))->ty() == TK_IDENT)
   {
-    char *name = ((Token*)tokens.get(pos))->name();
+    char *name = ((Token*)tokens.get(pos++))->name();
+    debug("map address 2 = %d", &map);
     void *id = map.get(name);
     if (id == NULL) {
       id = (void*)(8 * (map.len() + 1));
       map.put(name, id);
     }
-    Node *node = new Node(ND_IDENT, ((Token*)tokens.get(pos++))->name(), (int)(long)id);
-    // 関数
+    debug("map length = %d", map.len());
+    // 関数呼び出し
     if (consume('(')) {
-      Vector nodes;
-      // FIXME: 美しくない
+      Vector *nodes = new Vector();
       if (!consume(')')) {
         // 引数の処理
         do {
           Node *node = expr();
-          nodes.push(node);
+          nodes->push(node);
         } while (consume(','));
         if (!consume(')'))
           error_at(((Token*)tokens.get(pos))->input(),
                   "開きカッコに対応する閉じカッコがありません");
       }
-      return new Node(ND_FUNC, node->name(), nodes);
+      return new Node(ND_FCALL, name, nodes);
     }
-    return node;
+    return new Node(ND_IDENT, name, (int)(long)id);
   }
 
   // そうでなければ数値のはず

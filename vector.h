@@ -6,12 +6,10 @@ public:
   // コンストラクタ
   Vector();
 
-  // NOTE: デストラクタを作ったらコピーコンストラクタも作ること
-
   void push(void *elem);
 
   // getter
-  void *get(int i) { return _data[i]; }
+  void *get(int index);
   int len() { return _len; }
 
 private:

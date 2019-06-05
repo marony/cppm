@@ -1,6 +1,8 @@
 #include <cstdlib>
+#include <cstring>
 
 #include "vector.h"
+#include "debug.h"
 
 // コンストラクタ
 Vector::Vector()
@@ -13,4 +15,10 @@ void Vector::push(void *elem) {
     _data = (void**)::realloc(_data, sizeof(void*) * _capacity);
   }
   _data[_len++] = elem;
+}
+
+void *Vector::get(int index) {
+  if (index < _len)
+    return _data[index];
+  return NULL;
 }

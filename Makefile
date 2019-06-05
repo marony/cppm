@@ -1,4 +1,4 @@
-CFLAGS=-Wall -std=c++11
+CFLAGS=-g -Wall -std=c++11
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.c=.o)
 EXECUTABLE=cppm

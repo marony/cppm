@@ -5,6 +5,7 @@
 class Map {
 public:
   void put(char *key, void *val);
+  void *get(int i);
   void *get(char *key);
 
   // getter

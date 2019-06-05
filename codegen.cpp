@@ -2,6 +2,7 @@
 
 #include "codegen.h"
 #include "cppm.h"
+#include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
@@ -23,15 +24,78 @@ int newLabelNo() {
   return ++labelNo;
 }
 
+void gen_prologue(Node *node) {
+  debug("gen_prologue: %d", node->ty());
+  // プロローグ
+  std::cout << node->name() << ":" << std::endl;
+  // rbpの保存
+  std::cout << "  push rbp" << std::endl;
+  // rbpの設定
+  std::cout << "  mov rbp, rsp" << std::endl;
+  // 変数分スタックを確保
+  std::cout << "  sub rsp, " << (map.len() * 8) << std::endl;
+  // 関数の引数をスタックに積む
+  for (int i = 0; i < node->nodes()->len(); ++i) {
+    Node *paramNode = (Node*)node->nodes()->get(i);
+    char* name = paramNode->name();
+    int offset = (int)(long)map.get(name);
+    std::cout << "  mov rax, rbp" << std::endl;
+    std::cout << "  sub rax, " << offset << std::endl;
+    switch (i) {
+    case 0:
+      std::cout << "  mov [rax], rdi" << std::endl;
+      break;
+    case 1:
+      std::cout << "  mov [rax], rsi" << std::endl;
+      break;
+    case 2:
+      std::cout << "  mov [rax], rdx" << std::endl;
+      break;
+    case 3:
+      std::cout << "  mov [rax], rcx" << std::endl;
+      break;
+    case 4:
+      std::cout << "  mov [rax], r8" << std::endl;
+      break;
+    case 5:
+      std::cout << "  mov [rax], r9" << std::endl;
+      break;
+    default:
+      std::cout << "  	mov	r10, QWORD PTR " << (i - (6 - 1)) * 16 << "[rbp]" << std::endl;
+      std::cout << "  mov [rax], r10" << std::endl;
+      break;
+    }
+  }
+}
+
+void gen_epilogue(Node *node) {
+  debug("gen_epilogue: %d", node->ty());
+  // エピローグ
+  // 最後の式の結果がRAXに残っているのでそれが返り値になる
+  // スタックを復元
+  std::cout << "  mov rsp, rbp" << std::endl;
+  // rbpを復元
+  std::cout << "  pop rbp" << std::endl;
+
+  std::cout << "  ret" << std::endl;
+}
+
 // コード生成
 void gen(Node *node) {
-  // return
-  if (node->ty() == ND_BLOCK) {
+  debug("gen: %d", node->ty());
+  if (node->ty() == ND_FDEFIN) {
+    debug("fdefin");
+    gen_prologue(node);
+    gen(node->lhs());
+    gen_epilogue(node);
+    debug("nifedf");
+    return;
+  } else if (node->ty() == ND_BLOCK) {
     debug("block");
-    for (int i = 0; i < node->nodes().len(); ++i) {
-      debug("%d\n", ((Node*)node->nodes().get(i))->ty());
-      gen((Node*)node->nodes().get(i));
-      if (i < node->nodes().len() - 1)
+    for (int i = 0; i < node->nodes()->len(); ++i) {
+      debug("%d\n", ((Node*)node->nodes()->get(i))->ty());
+      gen((Node*)node->nodes()->get(i));
+      if (i < node->nodes()->len() - 1)
         std::cout << "  pop rax" << std::endl;
     }
     debug("kcolb");
@@ -134,12 +198,12 @@ void gen(Node *node) {
     return;
   }
 
-  // 関数
-  if (node->ty() == ND_FUNC) {
+  // 関数呼び出し
+  if (node->ty() == ND_FCALL) {
     debug("function");
     // 引数の処理
-    for (int i = node->nodes().len() - 1; i >= 0; --i) {
-      Node *param = (Node*)node->nodes().get(i);
+    for (int i = node->nodes()->len() - 1; i >= 0; --i) {
+      Node *param = (Node*)node->nodes()->get(i);
       switch (i) {
       case 0:
         gen(param);

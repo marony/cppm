@@ -5,13 +5,14 @@
 
 /*
 # EBNF
-program = stmt*
-stmt    = expr ";"
-        | "{" stmt* "}"
-        | "if" "(" expr ")" stmt ("else" stmt)?
-        | "while" "(" expr ")" stmt
-        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-        | "return" expr ";"
+program    = difin*
+difin      = FIXME: func(param, paaram...) { stmt* }
+stmt       = expr ";"
+           | "{" stmt* "}"
+           | "if" "(" expr ")" stmt ("else" stmt)?
+           | "while" "(" expr ")" stmt
+           | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+           | "return" expr ";"
 expr       = assign
 assign     = equality ("=" assign)?
 equality   = relational ("==" relational | "!=" relational)*
@@ -77,7 +78,8 @@ private:
 enum {
   ND_NUM = 256, // 整数
   ND_IDENT,     // 識別子
-  ND_FUNC,      // 関数
+  ND_FCALL,     // 関数呼び出し
+  ND_FDEFIN,    // 関数定義
   ND_BLOCK,     // ブロック
   ND_IF,        // if
   ND_IFELSE,    // if else
@@ -99,8 +101,8 @@ public:
   Node(int ty, char* name, int offset);
   Node(int ty, Node *lhs, Node *rhs, Node *node1);
   Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2);
-  Node(int ty, Vector nodes);
-  Node(int ty, char *name, Vector nodes);
+  Node(int ty, char *name, Vector *nodes);
+  Node(int ty, char *name, Vector *nodes, Node *node);
 
   // getter
   int ty() { return _ty; }
@@ -111,18 +113,18 @@ public:
   int offset() { return _offset; }
   Node *node1() { return _node1; }
   Node *node2() { return _node2; }
-  Vector nodes() { return _nodes; }
+  Vector *nodes() { return _nodes; }
 
 private:
-  int _ty;       // 演算子かND_NUM
-  Node *_lhs;    // 左辺
-  Node *_rhs;    // 右辺
-  int _val;      // tyがND_NUMの場合のみ使う
-  char *_name;   // tyがND_IDENTの場合のみ使う
-  int _offset;   // tyがND_IDENTの場合のみ使う
-  Node *_node1;  // tyがND_IFELSE, ND_FORの場合のみ使う
-  Node *_node2;  // tyがND_FORの場合のみ使う
-  Vector _nodes; // tyがND_BLOCKの場合、ブロックの中のstmts
+  int _ty;        // 演算子かND_NUM
+  Node *_lhs;     // 左辺
+  Node *_rhs;     // 右辺
+  int _val;       // tyがND_NUMの場合のみ使う
+  char *_name;    // tyがND_IDENTの場合のみ使う
+  int _offset;    // tyがND_IDENTの場合のみ使う
+  Node *_node1;   // tyがND_IFELSE, ND_FORの場合のみ使う
+  Node *_node2;   // tyがND_FORの場合のみ使う
+  Vector *_nodes; // tyがND_BLOCKの場合、ブロックの中のstmts
 };
 
 extern void tokenize(char *p);

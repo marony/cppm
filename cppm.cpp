@@ -7,6 +7,7 @@
 #include "vector.h"
 #include "map.h"
 #include "codegen.h"
+#include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -31,15 +32,6 @@ void error_at(char *loc, char *msg) {
   fprintf(stderr, "%*s", pos, ""); // pos個の空白を出力
   fprintf(stderr, "^ %s\n", msg);
   exit(1);
-}
-
-// デバッグ出力
-// printfと同じ引数を取る
-void debug(char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
 }
 
 // テスト
@@ -101,30 +93,16 @@ int main(int argc, char **argv) {
   // アセンブリの前半部分を出力
   std::cout << ".intel_syntax noprefix" << std::endl;
   std::cout << ".global main" << std::endl;
-  std::cout << "main:" << std::endl;
-
-  // プロローグ
-  // 変数26個分の領域を確保する
-  std::cout << "  push rbp" << std::endl;
-  std::cout << "  mov rbp, rsp" << std::endl;
-  int identSize = map.len() * 8;
-  std::cout << "  sub rsp, " << identSize << std::endl;
 
   // 先頭の式から順にコード生成
-  for (int i = 0; code[i]; ++i) {
-    debug("%d\n", code[i]->ty());
+  int i = 0;
+  for (; code[i]; ++i) {
     gen(code[i]);
 
     // 式の評価結果としてスタックに一つの値が残っている
     // はずなので、スタックが溢れないようにポップしておく
     std::cout << "  pop rax" << std::endl;
   }
-
-  // エピローグ
-  // 最後の式の結果がRAXに残っているのでそれが返り値になる
-  std::cout << "  mov rsp, rbp" << std::endl;
-  std::cout << "  pop rbp" << std::endl;
-  std::cout << "  ret" << std::endl;
   
   return 0;
 }
