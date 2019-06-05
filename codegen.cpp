@@ -137,9 +137,49 @@ void gen(Node *node) {
   // 関数
   if (node->ty() == ND_FUNC) {
     debug("function");
+    // 引数の処理
+    for (int i = node->nodes().len() - 1; i >= 0; --i) {
+      Node *param = (Node*)node->nodes().get(i);
+      switch (i) {
+      case 0:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov rdi, rax" << std::endl;
+        break;
+      case 1:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov rsi, rax" << std::endl;
+        break;
+      case 2:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov rdx, rax" << std::endl;
+        break;
+      case 3:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov rcx, rax" << std::endl;
+        break;
+      case 4:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov r8, rax" << std::endl;
+        break;
+      case 5:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  mov r9, rax" << std::endl;
+        break;
+      default:
+        gen(param);
+        std::cout << "  pop rax" << std::endl;
+        std::cout << "  push rax" << std::endl;
+        break;
+      }
+    }
     std::cout << "  call " << node->name() << std::endl;
     std::cout << "  push rax" << std::endl;
-    // TODO: 引数の処理
     debug("noitcnuf");
     return;
   }

@@ -71,8 +71,9 @@ try 6 "a = 1; for (i = 0; i < 5; i = i + 1) a = a + 1; return a;"
 # ステップ13: ブロック
 try 21 "a = 5; if (2 > 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a;"
 try 29 "a = 5; if (2 < 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a;"
-# ステップ14: 関数の呼び出しに対応する
+ステップ14: 関数の呼び出しに対応する
 try 5 "return test1();"
-try 5 "return test1(2, 3);"
+try 12 "return test2(3, 4, 5);"
+try 28 "return test3(1, 2, 3, 4, 5, 6, 7);"
 
 echo OK
