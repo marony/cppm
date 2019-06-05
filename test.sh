@@ -78,5 +78,6 @@ try() {
 try 5 "main(argc, argv) { return 5; }"
 try 7 "test0(x, y) { return x + y; } main(argc, argv) { return test0(3, 4); }"
 try 180 "test0(p1, p2, p3, p4, p5, p6, p7) { return (p1 + p2 + p3 + p4) * (p5 + p6 + p7); } main(argc, argv) { return test0(1, 2, 3, 4, 5, 6, 7); }"
-
+try 120 "factorial(n) { if (n <= 1) return 1; else return n * factorial(n - 1); } main(argc, argv) { return factorial(5); }"
+try 120 "factorial(n) { if (n <= 1) return 1; return n * factorial(n - 1); } main(argc, argv) { return factorial(5); }"
 echo OK
