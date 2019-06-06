@@ -2,6 +2,7 @@
 
 #include "codegen.h"
 #include "cppm.h"
+#include "type.h"
 #include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -12,7 +13,8 @@ void gen_lval(Node *node) {
   if (node->ty() != ND_IDENT)
     error("代入の左辺値が変数ではありません");
 
-  int offset = node->offset();
+  Type *type = node->type();
+  int offset = type->offset();
   std::cout << "  mov rax, rbp" << std::endl;
   std::cout << "  sub rax, " << offset << std::endl;
   std::cout << "  push rax" << std::endl;
@@ -36,9 +38,10 @@ void gen_prologue(Node *node) {
   std::cout << "  sub rsp, " << (map.len() * 8) << std::endl;
   // 関数の引数をスタックに積む
   for (int i = 0; i < node->nodes()->len(); ++i) {
-    Node *paramNode = (Node*)node->nodes()->get(i);
+    Node *paramNode = node->nodes()->get(i);
     char* name = paramNode->name();
-    int offset = (int)(long)map.get(name);
+    Type *type = map.get(name);
+    int offset = type->offset();
     std::cout << "  mov rax, rbp" << std::endl;
     std::cout << "  sub rax, " << offset << std::endl;
     switch (i) {
@@ -93,8 +96,8 @@ void gen(Node *node) {
   } else if (node->ty() == ND_BLOCK) {
     debug("block");
     for (int i = 0; i < node->nodes()->len(); ++i) {
-      debug("%d\n", ((Node*)node->nodes()->get(i))->ty());
-      gen((Node*)node->nodes()->get(i));
+      debug("%d\n", (node->nodes()->get(i))->ty());
+      gen(node->nodes()->get(i));
       if (i < node->nodes()->len() - 1)
         std::cout << "  pop rax" << std::endl;
     }
@@ -203,7 +206,7 @@ void gen(Node *node) {
     debug("function");
     // 引数の処理
     for (int i = node->nodes()->len() - 1; i >= 0; --i) {
-      Node *param = (Node*)node->nodes()->get(i);
+      Node *param = node->nodes()->get(i);
       switch (i) {
       case 0:
         gen(param);

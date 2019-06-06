@@ -2,16 +2,18 @@
 
 #include "vector.h"
 
-class Map {
+class Type;
+
+class SymbolMap {
 public:
-  void put(char *key, void *val);
-  void *get(int i);
-  void *get(char *key);
+  void put(char *key, Type *val);
+  Type *get(int i);
+  Type *get(char *key);
 
   // getter
   int len() { return keys.len(); }
 
 private:
   Vector keys;
-  Vector vals;
+  TypeVector vals;
 };

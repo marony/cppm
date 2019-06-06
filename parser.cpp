@@ -3,6 +3,7 @@
 
 #include "parser.h"
 #include "cppm.h"
+#include "type.h"
 #include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -11,8 +12,8 @@
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 int pos;
-Vector tokens;
-Map map;
+TokenVector tokens;
+SymbolMap map;
 Node* code[100];
 
 int is_alnum(char c) {
@@ -50,8 +51,8 @@ Node::Node(int ty, int val)
   : _ty(ty), _val(val) {
 }
 
-Node::Node(int ty, char *name, int offset)
-  : _ty(ty), _name(name), _offset(offset) {
+Node::Node(int ty, char *name, Type *type)
+  : _ty(ty), _name(name), _type(type) {
 }
 
 Node::Node(int ty, Node *lhs, Node *rhs, Node *node1)
@@ -62,16 +63,16 @@ Node::Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2)
   : _ty(ty), _lhs(lhs), _rhs(rhs), _node1(node1), _node2(node2) {
 }
 
-Node::Node(int ty, char *name, Vector *nodes)
+Node::Node(int ty, char *name, NodeVector *nodes)
   : _ty(ty), _name(name), _nodes(nodes) {
 }
 
-Node::Node(int ty, char *name, Vector *nodes, Node *node)
+Node::Node(int ty, char *name, NodeVector *nodes, Node *node)
   : _ty(ty), _name(name), _nodes(nodes), _lhs(node) {
 }
 
 int consume(int ty) {
-  if (((Token*)tokens.get(pos))->ty() != ty)
+  if (tokens.get(pos)->ty() != ty)
     return 0;
   ++pos;
   return 1;
@@ -92,54 +93,55 @@ Node *num();
 
 void program() {
   int i = 0;
-  while (((Token*)tokens.get(pos))->ty() != TK_EOF) {
+  while (tokens.get(pos)->ty() != TK_EOF) {
     code[i++] = defin();
   }
   code[i] = NULL;
 }
 
 Node *defin() {
-  debug("defin: %d", ((Token*)tokens.get(pos))->ty());
+  debug("defin: %d", tokens.get(pos)->ty());
   if (!consume(TK_IDENT))
-    error_at(((Token*)tokens.get(pos))->input(), "関数定義がありません");
+    error_at(tokens.get(pos)->input(), "関数定義がありません");
   // 関数定義
-  char *name = ((Token*)tokens.get(pos - 1))->name();
+  char *name = tokens.get(pos - 1)->name();
   if (!consume('('))
-    error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
-  Vector *nodes = new Vector();
+    error_at(tokens.get(pos)->input(), "'('ではないトークンです");
+  NodeVector *nodes = new NodeVector();
   if (!consume(')')) {
     // 引数の処理
     do {
-      if (((Token*)tokens.get(pos))->ty() == TK_IDENT) {
-        char *name = ((Token*)tokens.get(pos++))->name();
-        void *id = map.get(name);
-        if (id == NULL) {
-          id = (void*)(8 * (map.len() + 1));
-          map.put(name, id);
+      if (tokens.get(pos)->ty() == TK_IDENT) {
+        char *name = tokens.get(pos++)->name();
+        Type *type = map.get(name);
+        if (type == NULL) {
+          int offset = 8 * (map.len() + 1);
+          type = new Type(offset);
+          map.put(name, type);
         }
-        Node *node = new Node(ND_IDENT, name, (int)(long)id);
+        Node *node = new Node(ND_IDENT, name, type);
         nodes->push(node);
       }
       else
-        error_at(((Token*)tokens.get(pos))->input(),
+        error_at(tokens.get(pos)->input(),
                 "関数定義の引数がありません");
     } while (consume(','));
     if (!consume(')'))
-      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
   }
-  if (((Token*)tokens.get(pos))->ty() != '{')
-    error_at(((Token*)tokens.get(pos))->input(), "関数定義の'{'がありません");
+  if (tokens.get(pos)->ty() != '{')
+    error_at(tokens.get(pos)->input(), "関数定義の'{'がありません");
   Node *block = stmt();
   return new Node(ND_FDEFIN, name, nodes, block);
 }
 
 Node *stmt() {
-  debug("stmt: %d", ((Token*)tokens.get(pos))->ty());
+  debug("stmt: %d", tokens.get(pos)->ty());
   Node *node;
 
   if (consume('{')) {
     // ブロック
-    Vector *nodes = new Vector();
+    NodeVector *nodes = new NodeVector();
     while (!consume('}')) {
       Node *node = stmt();
       nodes->push(node);
@@ -151,10 +153,10 @@ Node *stmt() {
   } else if (consume(TK_IF)) {
     // if
     if (!consume('('))
-      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
     Node *node1 = expr();
     if (!consume(')'))
-      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
     Node *node2 = stmt();
     if (!consume(TK_ELSE)) {
       // if
@@ -166,33 +168,33 @@ Node *stmt() {
   } else if (consume(TK_WHILE)) {
     // while
     if (!consume('('))
-      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
     Node *node1 = expr();
     if (!consume(')'))
-      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
     return new Node(ND_WHILE, node1, stmt());
   } else if (consume(TK_FOR)) {
     // for
     if (!consume('('))
-      error_at(((Token*)tokens.get(pos))->input(), "'('ではないトークンです");
+      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
     Node *node1 = NULL;
     Node *node2 = NULL;
     Node *node3 = NULL;
     if (!consume(';')) {
       node1 = expr();
       if (!consume(';'))
-        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+        error_at(tokens.get(pos)->input(), "';'ではないトークンです");
     }
     if (!consume(';')) {
       node2 = expr();
       if (!consume(';'))
-        error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+        error_at(tokens.get(pos)->input(), "';'ではないトークンです");
     }
     if (!consume(')')) {
       node3 = expr();
     }
     if (!consume(')'))
-      error_at(((Token*)tokens.get(pos))->input(), "')'ではないトークンです");
+      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
     return new Node(ND_FOR, node1, node2, node3, stmt());
   } else {
     // expr
@@ -200,17 +202,17 @@ Node *stmt() {
   }
   
   if (!consume(';'))
-    error_at(((Token*)tokens.get(pos))->input(), "';'ではないトークンです");
+    error_at(tokens.get(pos)->input(), "';'ではないトークンです");
   return node;
 }
 
 Node *expr() {
-  debug("expr: %d", ((Token*)tokens.get(pos))->ty());
+  debug("expr: %d", tokens.get(pos)->ty());
   return assign();
 }
 
 Node *assign() {
-  debug("assign: %d", ((Token*)tokens.get(pos))->ty());
+  debug("assign: %d", tokens.get(pos)->ty());
   Node *node = equality();
   if (consume('='))
     node = new Node('=', node, assign());
@@ -218,7 +220,7 @@ Node *assign() {
 }
 
 Node *equality() {
-  debug("equality: %d", ((Token*)tokens.get(pos))->ty());
+  debug("equality: %d", tokens.get(pos)->ty());
   Node *node = relational();
 
   for (;;) {
@@ -232,7 +234,7 @@ Node *equality() {
 }
 
 Node *relational() {
-  debug("relational: %d", ((Token*)tokens.get(pos))->ty());
+  debug("relational: %d", tokens.get(pos)->ty());
   Node *node = add();
 
   for (;;) {
@@ -250,7 +252,7 @@ Node *relational() {
 }
 
 Node *add() {
-  debug("add: %d", ((Token*)tokens.get(pos))->ty());
+  debug("add: %d", tokens.get(pos)->ty());
   Node *node = mul();
 
   for (;;) {
@@ -264,7 +266,7 @@ Node *add() {
 }
 
 Node *mul() {
-  debug("mul: %d", ((Token*)tokens.get(pos))->ty());
+  debug("mul: %d", tokens.get(pos)->ty());
   Node *node = unary();
 
   for (;;) {
@@ -278,7 +280,7 @@ Node *mul() {
 }
 
 Node *unary() {
-  debug("unary: %d", ((Token*)tokens.get(pos))->ty());
+  debug("unary: %d", tokens.get(pos)->ty());
   if (consume('+'))
     return term();
   if (consume('-')) // "0 - term"
@@ -287,30 +289,31 @@ Node *unary() {
 }
 
 Node *term() {
-  debug("term: %d", ((Token*)tokens.get(pos))->ty());
+  debug("term: %d", tokens.get(pos)->ty());
   // 次のトークンが'('なら、"(" expr ")"のはず
   if (consume('(')) {
     Node *node = expr();
     if (!consume(')'))
-      error_at(((Token*)tokens.get(pos))->input(),
+      error_at(tokens.get(pos)->input(),
                "開きカッコに対応する閉じカッコがありません");
     return node;
   }
 
   // 識別子
-  if (((Token*)tokens.get(pos))->ty() == TK_IDENT)
+  if (tokens.get(pos)->ty() == TK_IDENT)
   {
-    char *name = ((Token*)tokens.get(pos++))->name();
+    char *name = tokens.get(pos++)->name();
     debug("map address 2 = %d", &map);
-    void *id = map.get(name);
-    if (id == NULL) {
-      id = (void*)(8 * (map.len() + 1));
-      map.put(name, id);
+    Type *type = map.get(name);
+    if (type == NULL) {
+      int offset = 8 * (map.len() + 1);
+      type = new Type(offset);
+      map.put(name, type);
     }
     debug("map length = %d", map.len());
     // 関数呼び出し
     if (consume('(')) {
-      Vector *nodes = new Vector();
+      NodeVector *nodes = new NodeVector();
       if (!consume(')')) {
         // 引数の処理
         do {
@@ -318,20 +321,20 @@ Node *term() {
           nodes->push(node);
         } while (consume(','));
         if (!consume(')'))
-          error_at(((Token*)tokens.get(pos))->input(),
+          error_at(tokens.get(pos)->input(),
                   "開きカッコに対応する閉じカッコがありません");
       }
       return new Node(ND_FCALL, name, nodes);
     }
-    return new Node(ND_IDENT, name, (int)(long)id);
+    return new Node(ND_IDENT, name, type);
   }
 
   // そうでなければ数値のはず
-  if (((Token*)tokens.get(pos))->ty() == TK_NUM)
-    return new Node(ND_NUM, ((Token*)tokens.get(pos++))->val());
+  if (tokens.get(pos)->ty() == TK_NUM)
+    return new Node(ND_NUM, tokens.get(pos++)->val());
 
-  debug("%d\n", ((Token*)tokens.get(pos))->ty());
-  error_at(((Token*)tokens.get(pos))->input(),
+  debug("%d\n", tokens.get(pos)->ty());
+  error_at(tokens.get(pos)->input(),
            "数値でも開きカッコでもないトークンです");
 }
 
