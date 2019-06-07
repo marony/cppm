@@ -51,8 +51,8 @@ Node::Node(int ty, int val)
   : _ty(ty), _val(val) {
 }
 
-Node::Node(int ty, char *name, Type *type)
-  : _ty(ty), _name(name), _type(type) {
+Node::Node(int ty, char *name, SymbolInfo *symbol)
+  : _ty(ty), _name(name), _symbol(symbol) {
 }
 
 Node::Node(int ty, Node *lhs, Node *rhs, Node *node1)
@@ -113,13 +113,16 @@ Node *defin() {
     do {
       if (tokens.get(pos)->ty() == TK_IDENT) {
         char *name = tokens.get(pos++)->name();
-        Type *type = map.get(name);
-        if (type == NULL) {
+        SymbolInfo *symbol = map.get(name);
+        Type *type = NULL;
+        if (symbol == NULL) {
           int offset = 8 * (map.len() + 1);
-          type = new Type(offset);
-          map.put(name, type);
+          type = new Type(INT);
+          symbol = new SymbolInfo(type, offset);
+          map.put(name, symbol);
         }
-        Node *node = new Node(ND_IDENT, name, type);
+        type = symbol->type();
+        Node *node = new Node(ND_IDENT, name, symbol);
         nodes->push(node);
       }
       else
@@ -304,12 +307,15 @@ Node *term() {
   {
     char *name = tokens.get(pos++)->name();
     debug("map address 2 = %d", &map);
-    Type *type = map.get(name);
-    if (type == NULL) {
+    SymbolInfo *symbol = map.get(name);
+    Type *type = NULL;
+    if (symbol == NULL) {
       int offset = 8 * (map.len() + 1);
-      type = new Type(offset);
-      map.put(name, type);
+      type = new Type(INT);
+      symbol = new SymbolInfo(type, offset);
+      map.put(name, symbol);
     }
+    type = symbol->type();
     debug("map length = %d", map.len());
     // 関数呼び出し
     if (consume('(')) {
@@ -326,7 +332,7 @@ Node *term() {
       }
       return new Node(ND_FCALL, name, nodes);
     }
-    return new Node(ND_IDENT, name, type);
+    return new Node(ND_IDENT, name, symbol);
   }
 
   // そうでなければ数値のはず

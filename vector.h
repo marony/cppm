@@ -1,6 +1,6 @@
 #pragma once
 
-class Type;
+class SymbolInfo;
 class Token;
 class Node;
 
@@ -23,19 +23,19 @@ private:
 };
 
 // 可変長ベクタ
-class TypeVector {
+class SymbolVector {
 public:
   // コンストラクタ
-  TypeVector();
+  SymbolVector();
 
-  void push(Type *elem);
+  void push(SymbolInfo *elem);
 
   // getter
-  Type *get(int index);
+  SymbolInfo *get(int index);
   int len() { return _len; }
 
 private:
-  Type **_data;
+  SymbolInfo **_data;
   int _capacity;
   int _len;
 };

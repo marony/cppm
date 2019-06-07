@@ -13,8 +13,9 @@ void gen_lval(Node *node) {
   if (node->ty() != ND_IDENT)
     error("代入の左辺値が変数ではありません");
 
-  Type *type = node->type();
-  int offset = type->offset();
+  SymbolInfo *symbol = node->symbol();
+  Type *type = symbol->type();
+  int offset = symbol->offset();
   std::cout << "  mov rax, rbp" << std::endl;
   std::cout << "  sub rax, " << offset << std::endl;
   std::cout << "  push rax" << std::endl;
@@ -40,8 +41,9 @@ void gen_prologue(Node *node) {
   for (int i = 0; i < node->nodes()->len(); ++i) {
     Node *paramNode = node->nodes()->get(i);
     char* name = paramNode->name();
-    Type *type = map.get(name);
-    int offset = type->offset();
+    SymbolInfo *symbol = paramNode->symbol();
+    Type *type = symbol->type();
+    int offset = symbol->offset();
     std::cout << "  mov rax, rbp" << std::endl;
     std::cout << "  sub rax, " << offset << std::endl;
     switch (i) {

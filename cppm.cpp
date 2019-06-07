@@ -45,11 +45,11 @@ void expect(int line, int expected, int actual) {
 
 void runtest() {
   // Vectorテスト
-  TypeVector *vec = new TypeVector();
+  SymbolVector *vec = new SymbolVector();
   expect(__LINE__, 0, vec->len());
 
   for (int i = 0; i < 100; i++)
-    vec->push((Type*)i);
+    vec->push((SymbolInfo*)i);
 
   expect(__LINE__, 100, vec->len());
   expect(__LINE__, 0, (long)vec->get(0));
@@ -60,13 +60,13 @@ void runtest() {
   SymbolMap *map = new SymbolMap();
   expect(__LINE__, 0, (long)map->get("foo"));
 
-  map->put("foo", (Type*)2);
+  map->put("foo", (SymbolInfo*)2);
   expect(__LINE__, 2, (long)map->get("foo"));
 
-  map->put("bar", (Type*)4);
+  map->put("bar", (SymbolInfo*)4);
   expect(__LINE__, 4, (long)map->get("bar"));
 
-  map->put("foo", (Type*)6);
+  map->put("foo", (SymbolInfo*)6);
   expect(__LINE__, 6, (long)map->get("foo"));
 
   printf("OK\n");

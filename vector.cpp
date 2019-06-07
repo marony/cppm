@@ -24,19 +24,19 @@ void *Vector::get(int index) {
 }
 
 // コンストラクタ
-TypeVector::TypeVector()
-  : _data((Type**)::malloc(sizeof(Type*) * 16)), _capacity(16), _len(0) {
+SymbolVector::SymbolVector()
+  : _data((SymbolInfo**)::malloc(sizeof(SymbolInfo*) * 16)), _capacity(16), _len(0) {
 }
 
-void TypeVector::push(Type *elem) {
+void SymbolVector::push(SymbolInfo *elem) {
   if (_capacity == _len) {
     _capacity *= 2;
-    _data = (Type**)::realloc(_data, sizeof(Type*) * _capacity);
+    _data = (SymbolInfo**)::realloc(_data, sizeof(SymbolInfo*) * _capacity);
   }
   _data[_len++] = elem;
 }
 
-Type *TypeVector::get(int index) {
+SymbolInfo *SymbolVector::get(int index) {
   if (index < _len)
     return _data[index];
   return NULL;

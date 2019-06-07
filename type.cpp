@@ -1,5 +1,9 @@
 #include "type.h"
 
-Type::Type(int offset)
-  : _offset(offset) {
+Type::Type(int ty)
+  : _ty(ty) {
+}
+
+SymbolInfo::SymbolInfo(Type *type, int offset)
+  : _type(type), _offset(offset) {
 }

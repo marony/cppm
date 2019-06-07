@@ -100,7 +100,7 @@ public:
   // コンストラクタ
   Node(int ty, Node *lhs, Node *rhs);
   Node(int ty, int val);
-  Node(int ty, char* name, Type *type);
+  Node(int ty, char* name, SymbolInfo *symbol);
   Node(int ty, Node *lhs, Node *rhs, Node *node1);
   Node(int ty, Node *lhs, Node *rhs, Node *node1, Node *node2);
   Node(int ty, char *name, NodeVector *nodes);
@@ -112,21 +112,21 @@ public:
   Node *rhs() { return _rhs; }
   int val() { return _val; }
   char *name() { return _name; }
-  Type *type() { return _type; }
+  SymbolInfo *symbol() { return _symbol; }
   Node *node1() { return _node1; }
   Node *node2() { return _node2; }
   NodeVector *nodes() { return _nodes; }
 
 private:
-  int _ty;        // 演算子かND_NUM
-  Node *_lhs;     // 左辺
-  Node *_rhs;     // 右辺
-  int _val;       // tyがND_NUMの場合のみ使う
-  char *_name;    // tyがND_IDENTの場合のみ使う
-  Type *_type;    // tyがND_IDENTの場合のみ使う
-  Node *_node1;   // tyがND_IFELSE, ND_FORの場合のみ使う
-  Node *_node2;   // tyがND_FORの場合のみ使う
-  NodeVector *_nodes; // tyがND_BLOCKの場合、ブロックの中のstmts
+  int _ty;                // 演算子かND_NUM
+  Node *_lhs;             // 左辺
+  Node *_rhs;             // 右辺
+  int _val;               // tyがND_NUMの場合のみ使う
+  char *_name;            // tyがND_IDENTの場合のみ使う
+  SymbolInfo *_symbol;    // tyがND_IDENTの場合のみ使う
+  Node *_node1;           // tyがND_IFELSE, ND_FORの場合のみ使う
+  Node *_node2;           // tyがND_FORの場合のみ使う
+  NodeVector *_nodes;     // tyがND_BLOCKの場合、ブロックの中のstmts
 };
 
 extern void tokenize(char *p);
