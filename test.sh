@@ -80,4 +80,9 @@ try 7 "int test0(int x, int y) { return x + y; } int main(int argc, int argv) { 
 try 180 "int test0(int p1, int p2, int p3, int p4, int p5, int p6, int p7) { return (p1 + p2 + p3 + p4) * (p5 + p6 + p7); } int main(int argc, int argv) { return test0(1, 2, 3, 4, 5, 6, 7); }"
 try 120 "int factorial(int n) { if (n <= 1) return 1; else return n * factorial(n - 1); } int main(int argc, int argv) { return factorial(5); }"
 try 120 "int factorial(int n) { if (n <= 1) return 1; return n * factorial(n - 1); } int main(int argc, int argv) { return factorial(5); }"
+# ステップ17: ポインタ型を導入する
+try 0 "int main(int argc, int argv) { int* a; return 0; }"
+try 0 "int main(int argc, int argv) { int* a; return 0; } int test(int *a) {}"
+try 0 "int main(int argc, int argv) { int* a; return 0; } int *test(int a) {}"
+
 echo OK

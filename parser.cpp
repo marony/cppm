@@ -102,39 +102,50 @@ void program() {
 
 // 関数定義
 Node *_function_difinition() {
+  // 戻り値型
   if (!consume(TK_TYPE))
     error_at(tokens.get(pos)->input(), "関数の型がありません");
-  if (!consume(TK_IDENT))
+  // 型修飾('*')
+  Type *type = new Type(INT, NULL);
+  while (tokens.get(pos)->ty() == '*') {
+    ++pos;
+    type = new Type(PTR, type);
+  }
+  // 関数名
+  if (tokens.get(pos)->ty() != TK_IDENT)
     error_at(tokens.get(pos)->input(), "関数定義がありません");
-  // 関数定義
-  char *name = tokens.get(pos - 1)->name();
+  char *name = tokens.get(pos++)->name();
   if (!consume('('))
     error_at(tokens.get(pos)->input(), "'('ではないトークンです");
   NodeVector *nodes = new NodeVector();
   if (!consume(')')) {
     // 引数の処理
     do {
-      if (tokens.get(pos++)->ty() != TK_TYPE) {
-        error_at(tokens.get(pos)->input(),
-                "引数の型がありません");
+      // 引数型
+      if (!consume(TK_TYPE))
+        error_at(tokens.get(pos)->input(), "引数の型がありません");
+      // 型修飾('*')
+      Type *type = new Type(INT, NULL);
+      while (tokens.get(pos)->ty() == '*') {
+        ++pos;
+        type = new Type(PTR, type);
       }
+      // 引数名
       if (tokens.get(pos)->ty() == TK_IDENT) {
         char *name = tokens.get(pos++)->name();
         SymbolInfo *symbol = map.get(name);
-        Type *type = NULL;
         if (symbol == NULL) {
           int offset = 8 * (map.len() + 1);
-          type = new Type(INT);
           symbol = new SymbolInfo(type, offset);
           map.put(name, symbol);
         }
+        // TODO: 引数の型と識別子表の型が違ったらエラーにしないと
         type = symbol->type();
         Node *node = new Node(ND_IDENT, name, symbol);
         nodes->push(node);
       }
       else {
-        error_at(tokens.get(pos)->input(),
-                "関数定義の引数がありません");
+        error_at(tokens.get(pos)->input(), "関数定義の引数がありません");
       }
     } while (consume(','));
     if (!consume(')'))
@@ -216,6 +227,16 @@ Node *_for() {
 
 // 変数定義
 Node *_variable_difinition() {
+  // 型
+  if (!consume(TK_TYPE))
+    error_at(tokens.get(pos)->input(), "変数の型がありません");
+  // 型修飾('*')
+  Type *type = new Type(INT, NULL);
+  while (tokens.get(pos)->ty() == '*') {
+    ++pos;
+    type = new Type(PTR, type);
+  }
+  // 変数名
   Token *token = tokens.get(pos++);
   if (token->ty() != TK_IDENT)
     error_at(tokens.get(pos)->input(), "識別子がありません");
@@ -226,7 +247,6 @@ Node *_variable_difinition() {
     error_at(tokens.get(pos)->input(), "すでに定義されている識別子です");
 
   int offset = 8 * (map.len() + 1);
-  Type *type = new Type(INT);
   symbol = new SymbolInfo(type, offset);
   map.put(name, symbol);
 
@@ -248,7 +268,7 @@ Node *stmt() {
     return _while();
   else if (consume(TK_FOR))
     return _for();
-  else if (consume(TK_TYPE))
+  else if (tokens.get(pos)->ty() == TK_TYPE)
     node = _variable_difinition();
   else
     node = expr();
@@ -372,7 +392,7 @@ Node *_ident() {
       }
       // 関数呼び出しか定義されている変数
       int offset = 8 * (map.len() + 1);
-      type = new Type(INT);
+      type = new Type(INT, NULL);
       symbol = new SymbolInfo(type, offset);
       map.put(name, symbol);
     } else {

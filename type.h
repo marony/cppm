@@ -8,10 +8,11 @@ enum {
 // 型情報
 class Type {
 public:
-  Type(int ty);
+  Type(int ty, Type *type);
 
 private:
   int _ty;
+  Type *_type;
 };
 
 // 識別子の情報
