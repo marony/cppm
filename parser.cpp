@@ -101,7 +101,7 @@ void program() {
 
 Node *defin() {
   debug("defin: %d", tokens.get(pos)->ty());
-  if (!consume(TK_INT))
+  if (!consume(TK_TYPE))
     error_at(tokens.get(pos)->input(), "関数の型がありません");
   if (!consume(TK_IDENT))
     error_at(tokens.get(pos)->input(), "関数定義がありません");
@@ -202,7 +202,7 @@ Node *stmt() {
     if (!consume(')'))
       error_at(tokens.get(pos)->input(), "')'ではないトークンです");
     return new Node(ND_FOR, node1, node2, node3, stmt());
-  } else if (consume(TK_INT)) {
+  } else if (consume(TK_TYPE)) {
     // 変数定義
     Token *token = tokens.get(pos++);
     if (token->ty() != TK_IDENT)
@@ -463,7 +463,7 @@ void tokenize(char *p) {
 
     // int
     if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-      tokens.push(new Token(TK_INT, p));
+      tokens.push(new Token(TK_TYPE, p));
       p += 3;
       continue;
     }

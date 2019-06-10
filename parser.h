@@ -45,13 +45,12 @@ enum {
   TK_WHILE,     // while
   TK_FOR,       // for
   TK_RETURN,    // return
+  TK_TYPE,      // 型
   TK_EQ,        // ==
   TK_NE,        // !=
   TK_LE,        // <=
   TK_GE,        // >=
   TK_EOF,       // 入力の終わりを表すトークン
-
-  TK_INT,
 };
 
 // トークンの型
