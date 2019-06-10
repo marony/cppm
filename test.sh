@@ -48,28 +48,28 @@ try 1 "main(argc, argv)  { return 0 >= 0; }"
 try 1 "main(argc, argv)  { return 0 <= 1; }"
 try 1 "main(argc, argv)  { return 0 <= 0; }"
 # ステップ9：1文字のローカル変数
-try 15 "main(argc, argv)  { a = 3; b = 30; c = 5; b - a * c; }"
+try 15 "main(argc, argv)  { int a; a = 3; int b; b = 30; int c; c = 5; b - a * c; }"
 # ステップ10：return文
-try 15 "main(argc, argv)  { a = 3; b = 30; c = 5; return b - a * c; }"
+try 15 "main(argc, argv)  { int a; a = 3; int b; b = 30; int c; c = 5; return b - a * c; }"
 # ステップ11：複数文字のローカル変数
-try 15 "main(argc, argv)  { foo = 3; bar = 30; baz = 5; return bar - foo * baz; }"
-try 3 "main(argc, argv)  { foo = 1; bar = 2; baz = 3; return (foo == 1) + (bar == 2) + (baz == 3); }"
-try 10 "main(argc, argv)  { foo = 1; foo = foo + 1; foo = foo + 5; foo = 3 + foo; return foo; }"
-try 0 "main(argc, argv)  { a = 0; return a; }"
+try 15 "main(argc, argv)  { int foo; foo = 3; int bar; bar = 30; int baz; baz = 5; return bar - foo * baz; }"
+try 3 "main(argc, argv)  { int foo; foo = 1; int bar; bar = 2; int baz; baz = 3; return (foo == 1) + (bar == 2) + (baz == 3); }"
+try 10 "main(argc, argv)  { int foo; foo = 1; foo = foo + 1; foo = foo + 5; foo = 3 + foo; return foo; }"
+try 0 "main(argc, argv)  { int a; a = 0; return a; }"
 # ステップ12: 制御構文を足す
 # if
-try 2 "main(argc, argv)  { a = 5; if (2 > 1) a = 2; return a; }"
-try 5 "main(argc, argv)  { a = 5; if (2 < 1) a = 2; return a; }"
+try 2 "main(argc, argv)  { int a; a = 5; if (2 > 1) a = 2; return a; }"
+try 5 "main(argc, argv)  { int a; a = 5; if (2 < 1) a = 2; return a; }"
 # if else
-try 2 "main(argc, argv)  { a = 5; if (2 > 1) a = 2; else a = 3; return a; }"
-try 3 "main(argc, argv)  { a = 5; if (2 < 1) a = 2; else a = 3; return a; }"
+try 2 "main(argc, argv)  { int a; a = 5; if (2 > 1) a = 2; else a = 3; return a; }"
+try 3 "main(argc, argv)  { int a; a = 5; if (2 < 1) a = 2; else a = 3; return a; }"
 # while
-try 0 "main(argc, argv)  { i = 5; while (i > 0) i = i - 1; return i; }"
+try 0 "main(argc, argv)  { int i; i = 5; while (i > 0) i = i - 1; return i; }"
 # for
-try 6 "main(argc, argv)  { a = 1; for (i = 0; i < 5; i = i + 1) a = a + 1; return a; }"
+try 6 "main(argc, argv)  { int a; int i; a = 1; for (i = 0; i < 5; i = i + 1) a = a + 1; return a; }"
 # ステップ13: ブロック
-try 21 "main(argc, argv)  { a = 5; if (2 > 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a; }"
-try 29 "main(argc, argv)  { a = 5; if (2 < 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a; }"
+try 21 "main(argc, argv)  { int a; a = 5; if (2 > 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a; }"
+try 29 "main(argc, argv)  { int a; a = 5; if (2 < 1) { a = 20; a = a + 1; } else { a = 30; a = a - 1; } return a; }"
 # ステップ14: 関数の呼び出しに対応する
 try 5 "main(argc, argv)  { return test1(); }"
 try 12 "main(argc, argv)  { return test2(3, 4, 5); }"

@@ -125,9 +125,10 @@ Node *defin() {
         Node *node = new Node(ND_IDENT, name, symbol);
         nodes->push(node);
       }
-      else
+      else {
         error_at(tokens.get(pos)->input(),
                 "関数定義の引数がありません");
+      }
     } while (consume(','));
     if (!consume(')'))
       error_at(tokens.get(pos)->input(), "')'ではないトークンです");
@@ -199,6 +200,25 @@ Node *stmt() {
     if (!consume(')'))
       error_at(tokens.get(pos)->input(), "')'ではないトークンです");
     return new Node(ND_FOR, node1, node2, node3, stmt());
+  } else if (consume(TK_INT)) {
+    // 変数定義
+    Token *token = tokens.get(pos++);
+    if (token->ty() != TK_IDENT)
+      error_at(tokens.get(pos)->input(), "識別子がありません");
+
+    char *name = token->name();
+    SymbolInfo *symbol = map.get(name);
+    if (symbol != NULL)
+      error_at(tokens.get(pos)->input(), "すでに定義されている識別子です");
+    if (!consume(';'))
+      error_at(tokens.get(pos)->input(), "';'ではないトークンです");
+
+    int offset = 8 * (map.len() + 1);
+    Type *type = new Type(INT);
+    symbol = new SymbolInfo(type, offset);
+    map.put(name, symbol);
+
+    return new Node(ND_IDENT, name, symbol);
   } else {
     // expr
     node = expr();
@@ -296,9 +316,10 @@ Node *term() {
   // 次のトークンが'('なら、"(" expr ")"のはず
   if (consume('(')) {
     Node *node = expr();
-    if (!consume(')'))
+    if (!consume(')')) {
       error_at(tokens.get(pos)->input(),
                "開きカッコに対応する閉じカッコがありません");
+    }
     return node;
   }
 
@@ -310,12 +331,19 @@ Node *term() {
     SymbolInfo *symbol = map.get(name);
     Type *type = NULL;
     if (symbol == NULL) {
+      if (tokens.get(pos)-> ty() != '(') {
+        // 変数
+        error_at(tokens.get(pos)->input(),
+                "定義されていない識別子です");
+      }
+      // 関数
       int offset = 8 * (map.len() + 1);
       type = new Type(INT);
       symbol = new SymbolInfo(type, offset);
       map.put(name, symbol);
+    } else {
+      type = symbol->type();
     }
-    type = symbol->type();
     debug("map length = %d", map.len());
     // 関数呼び出し
     if (consume('(')) {
@@ -326,9 +354,10 @@ Node *term() {
           Node *node = expr();
           nodes->push(node);
         } while (consume(','));
-        if (!consume(')'))
+        if (!consume(')')) {
           error_at(tokens.get(pos)->input(),
                   "開きカッコに対応する閉じカッコがありません");
+        }
       }
       return new Node(ND_FCALL, name, nodes);
     }
@@ -425,6 +454,13 @@ void tokenize(char *p) {
     // for
     if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
       tokens.push(new Token(TK_FOR, p));
+      p += 3;
+      continue;
+    }
+
+    // int
+    if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
+      tokens.push(new Token(TK_INT, p));
       p += 3;
       continue;
     }
