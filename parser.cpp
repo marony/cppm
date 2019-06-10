@@ -38,8 +38,8 @@ Token::Token(int ty, int val, char *input)
   : _ty(ty), _val(val), _input(input) {
 }
 
-Token::Token(char* name, char *input)
-  : _ty(TK_IDENT), _name(name), _input(input) {
+Token::Token(int ty, char* name, char *input)
+  : _ty(ty), _name(name), _input(input) {
 }
 
 // コンストラクタ
@@ -91,6 +91,7 @@ Node *unary();
 Node *term();
 Node *num();
 
+// プログラム
 void program() {
   int i = 0;
   while (tokens.get(pos)->ty() != TK_EOF) {
@@ -99,8 +100,8 @@ void program() {
   code[i] = NULL;
 }
 
-Node *defin() {
-  debug("defin: %d", tokens.get(pos)->ty());
+// 関数定義
+Node *_function_difinition() {
   if (!consume(TK_TYPE))
     error_at(tokens.get(pos)->input(), "関数の型がありません");
   if (!consume(TK_IDENT))
@@ -145,101 +146,125 @@ Node *defin() {
   return new Node(ND_FDEFIN, name, nodes, block);
 }
 
+// 関数定義・変数宣言
+Node *defin() {
+  debug("defin: %d", tokens.get(pos)->ty());
+  return _function_difinition();
+}
+
+// ブロック
+Node *_block() {
+  NodeVector *nodes = new NodeVector();
+  while (!consume('}')) {
+    Node *node = stmt();
+    nodes->push(node);
+  }
+  return new Node(ND_BLOCK, "", nodes);
+}
+
+// if, if～else
+Node *_if() {
+  if (!consume('('))
+    error_at(tokens.get(pos)->input(), "'('ではないトークンです");
+  Node *node1 = expr();
+  if (!consume(')'))
+    error_at(tokens.get(pos)->input(), "')'ではないトークンです");
+  Node *node2 = stmt();
+  if (!consume(TK_ELSE)) {
+    // if
+    return new Node(ND_IF, node1, node2);
+  } else {
+    // if else
+    return new Node(ND_IFELSE, node1, node2, stmt());
+  }
+}
+
+// while
+Node *_while() {
+  if (!consume('('))
+    error_at(tokens.get(pos)->input(), "'('ではないトークンです");
+  Node *node1 = expr();
+  if (!consume(')'))
+    error_at(tokens.get(pos)->input(), "')'ではないトークンです");
+  return new Node(ND_WHILE, node1, stmt());
+}
+
+// for
+Node *_for() {
+  if (!consume('('))
+    error_at(tokens.get(pos)->input(), "'('ではないトークンです");
+  Node *node1 = NULL;
+  Node *node2 = NULL;
+  Node *node3 = NULL;
+  if (!consume(';')) {
+    node1 = expr();
+    if (!consume(';'))
+      error_at(tokens.get(pos)->input(), "';'ではないトークンです");
+  }
+  if (!consume(';')) {
+    node2 = expr();
+    if (!consume(';'))
+      error_at(tokens.get(pos)->input(), "';'ではないトークンです");
+  }
+  if (!consume(')')) {
+    node3 = expr();
+  }
+  if (!consume(')'))
+    error_at(tokens.get(pos)->input(), "')'ではないトークンです");
+  return new Node(ND_FOR, node1, node2, node3, stmt());
+}
+
+// 変数定義
+Node *_variable_difinition() {
+  Token *token = tokens.get(pos++);
+  if (token->ty() != TK_IDENT)
+    error_at(tokens.get(pos)->input(), "識別子がありません");
+
+  char *name = token->name();
+  SymbolInfo *symbol = map.get(name);
+  if (symbol != NULL)
+    error_at(tokens.get(pos)->input(), "すでに定義されている識別子です");
+
+  int offset = 8 * (map.len() + 1);
+  Type *type = new Type(INT);
+  symbol = new SymbolInfo(type, offset);
+  map.put(name, symbol);
+
+  return new Node(ND_IDENT, name, symbol);
+}
+
+// 文
 Node *stmt() {
   debug("stmt: %d", tokens.get(pos)->ty());
   Node *node;
 
-  if (consume('{')) {
-    // ブロック
-    NodeVector *nodes = new NodeVector();
-    while (!consume('}')) {
-      Node *node = stmt();
-      nodes->push(node);
-    }
-    return new Node(ND_BLOCK, "", nodes);
-  } else if (consume(TK_RETURN)) {
-    // return
+  if (consume('{'))
+    return _block();
+  else if (consume(TK_RETURN))
     node = new Node(ND_RETURN, expr(), NULL);
-  } else if (consume(TK_IF)) {
-    // if
-    if (!consume('('))
-      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
-    Node *node1 = expr();
-    if (!consume(')'))
-      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
-    Node *node2 = stmt();
-    if (!consume(TK_ELSE)) {
-      // if
-      return new Node(ND_IF, node1, node2);
-    } else {
-      // if else
-      return new Node(ND_IFELSE, node1, node2, stmt());
-    }
-  } else if (consume(TK_WHILE)) {
-    // while
-    if (!consume('('))
-      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
-    Node *node1 = expr();
-    if (!consume(')'))
-      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
-    return new Node(ND_WHILE, node1, stmt());
-  } else if (consume(TK_FOR)) {
-    // for
-    if (!consume('('))
-      error_at(tokens.get(pos)->input(), "'('ではないトークンです");
-    Node *node1 = NULL;
-    Node *node2 = NULL;
-    Node *node3 = NULL;
-    if (!consume(';')) {
-      node1 = expr();
-      if (!consume(';'))
-        error_at(tokens.get(pos)->input(), "';'ではないトークンです");
-    }
-    if (!consume(';')) {
-      node2 = expr();
-      if (!consume(';'))
-        error_at(tokens.get(pos)->input(), "';'ではないトークンです");
-    }
-    if (!consume(')')) {
-      node3 = expr();
-    }
-    if (!consume(')'))
-      error_at(tokens.get(pos)->input(), "')'ではないトークンです");
-    return new Node(ND_FOR, node1, node2, node3, stmt());
-  } else if (consume(TK_TYPE)) {
-    // 変数定義
-    Token *token = tokens.get(pos++);
-    if (token->ty() != TK_IDENT)
-      error_at(tokens.get(pos)->input(), "識別子がありません");
-
-    char *name = token->name();
-    SymbolInfo *symbol = map.get(name);
-    if (symbol != NULL)
-      error_at(tokens.get(pos)->input(), "すでに定義されている識別子です");
-    if (!consume(';'))
-      error_at(tokens.get(pos)->input(), "';'ではないトークンです");
-
-    int offset = 8 * (map.len() + 1);
-    Type *type = new Type(INT);
-    symbol = new SymbolInfo(type, offset);
-    map.put(name, symbol);
-
-    return new Node(ND_IDENT, name, symbol);
-  } else {
-    // expr
+  else if (consume(TK_IF))
+    return _if();
+  else if (consume(TK_WHILE))
+    return _while();
+  else if (consume(TK_FOR))
+    return _for();
+  else if (consume(TK_TYPE))
+    node = _variable_difinition();
+  else
     node = expr();
-  }
   
   if (!consume(';'))
     error_at(tokens.get(pos)->input(), "';'ではないトークンです");
   return node;
 }
 
+// 式
 Node *expr() {
   debug("expr: %d", tokens.get(pos)->ty());
   return assign();
 }
 
+// 代入
 Node *assign() {
   debug("assign: %d", tokens.get(pos)->ty());
   Node *node = equality();
@@ -248,6 +273,7 @@ Node *assign() {
   return node;
 }
 
+// 比較
 Node *equality() {
   debug("equality: %d", tokens.get(pos)->ty());
   Node *node = relational();
@@ -262,6 +288,7 @@ Node *equality() {
   }
 }
 
+// 二項演算子
 Node *relational() {
   debug("relational: %d", tokens.get(pos)->ty());
   Node *node = add();
@@ -280,6 +307,7 @@ Node *relational() {
   }
 }
 
+// 加算・減算
 Node *add() {
   debug("add: %d", tokens.get(pos)->ty());
   Node *node = mul();
@@ -294,6 +322,7 @@ Node *add() {
   }
 }
 
+// 乗算・除算(項)(term)
 Node *mul() {
   debug("mul: %d", tokens.get(pos)->ty());
   Node *node = unary();
@@ -308,6 +337,7 @@ Node *mul() {
   }
 }
 
+// 一項演算子
 Node *unary() {
   debug("unary: %d", tokens.get(pos)->ty());
   if (consume('+'))
@@ -317,33 +347,30 @@ Node *unary() {
   return term();
 }
 
-Node *term() {
-  debug("term: %d", tokens.get(pos)->ty());
-  // 次のトークンが'('なら、"(" expr ")"のはず
-  if (consume('(')) {
-    Node *node = expr();
-    if (!consume(')')) {
-      error_at(tokens.get(pos)->input(),
-               "開きカッコに対応する閉じカッコがありません");
-    }
-    return node;
+// 括弧
+Node *_brackets() {
+  Node *node = expr();
+  if (!consume(')')) {
+    error_at(tokens.get(pos)->input(),
+              "開きカッコに対応する閉じカッコがありません");
   }
+  return node;
+}
 
-  // 識別子
-  if (tokens.get(pos)->ty() == TK_IDENT)
-  {
+// 識別子(変数評価・関数呼び出し)
+Node *_ident() {
     // 変数評価
     char *name = tokens.get(pos++)->name();
     debug("map address 2 = %d", &map);
     SymbolInfo *symbol = map.get(name);
     Type *type = NULL;
     if (symbol == NULL) {
+      // 変数は定義されいなくてはならない
       if (tokens.get(pos)-> ty() != '(') {
-        // 変数
         error_at(tokens.get(pos)->input(),
                 "定義されていない識別子です");
       }
-      // 関数呼び出し
+      // 関数呼び出しか定義されている変数
       int offset = 8 * (map.len() + 1);
       type = new Type(INT);
       symbol = new SymbolInfo(type, offset);
@@ -369,7 +396,18 @@ Node *term() {
       return new Node(ND_FCALL, name, nodes);
     }
     return new Node(ND_IDENT, name, symbol);
-  }
+}
+
+// 因子(factor)
+Node *term() {
+  debug("term: %d", tokens.get(pos)->ty());
+  // 次のトークンが'('なら、"(" expr ")"のはず
+  if (consume('('))
+    return _brackets();
+
+  // 識別子
+  if (tokens.get(pos)->ty() == TK_IDENT)
+    return _ident();
 
   // そうでなければ数値のはず
   if (tokens.get(pos)->ty() == TK_NUM)
@@ -467,7 +505,7 @@ void tokenize(char *p) {
 
     // int
     if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-      tokens.push(new Token(TK_TYPE, p));
+      tokens.push(new Token(TK_TYPE, ::strndup(p, 3), p));
       p += 3;
       continue;
     }
@@ -478,7 +516,7 @@ void tokenize(char *p) {
       while (is_alnum(*q)) {
         ++q;
       }
-      tokens.push(new Token(::strndup(p, q - p), p));
+      tokens.push(new Token(TK_IDENT, ::strndup(p, q - p), p));
       p = q;
       continue;
     }

@@ -59,7 +59,7 @@ public:
   // コンストラクタ
   Token(int ty, char *input);
   Token(int ty, int val, char *input);
-  Token(char* name, char *input);
+  Token(int ty, char* name, char *input);
 
   // getter
   int ty() { return _ty; }
