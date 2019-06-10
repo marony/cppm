@@ -326,6 +326,7 @@ Node *term() {
   // 識別子
   if (tokens.get(pos)->ty() == TK_IDENT)
   {
+    // 変数評価
     char *name = tokens.get(pos++)->name();
     debug("map address 2 = %d", &map);
     SymbolInfo *symbol = map.get(name);
@@ -336,7 +337,7 @@ Node *term() {
         error_at(tokens.get(pos)->input(),
                 "定義されていない識別子です");
       }
-      // 関数
+      // 関数呼び出し
       int offset = 8 * (map.len() + 1);
       type = new Type(INT);
       symbol = new SymbolInfo(type, offset);
