@@ -101,6 +101,8 @@ void program() {
 
 Node *defin() {
   debug("defin: %d", tokens.get(pos)->ty());
+  if (!consume(TK_INT))
+    error_at(tokens.get(pos)->input(), "関数の型がありません");
   if (!consume(TK_IDENT))
     error_at(tokens.get(pos)->input(), "関数定義がありません");
   // 関数定義
