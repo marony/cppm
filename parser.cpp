@@ -113,6 +113,10 @@ Node *defin() {
   if (!consume(')')) {
     // 引数の処理
     do {
+      if (tokens.get(pos++)->ty() != TK_TYPE) {
+        error_at(tokens.get(pos)->input(),
+                "引数の型がありません");
+      }
       if (tokens.get(pos)->ty() == TK_IDENT) {
         char *name = tokens.get(pos++)->name();
         SymbolInfo *symbol = map.get(name);
