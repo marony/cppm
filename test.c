@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-extern int test1();
-extern int test2();
+void alloc4(int **p, int v1, int v2, int v3, int v4) {
+  *p = (int*)malloc(sizeof(int) * 4);
+  (*p)[0] = v1;
+  (*p)[1] = v2;
+  (*p)[2] = v3;
+  (*p)[3] = v4;
+}
 
 int test1() {
   printf("This is C language.\nOK\n");

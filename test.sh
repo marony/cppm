@@ -4,6 +4,7 @@ try() {
   expected="$1"
   input="$2"
 
+  echo $input
   ./cppm "$input" > tmp.s
   gcc -g -c tmp.s
   gcc -g -c test.c
@@ -85,5 +86,9 @@ try 0 "int main(int argc, int argv) { int* a; return 0; }"
 try 0 "int main(int argc, int argv) { int* a; return 0; } int test(int *a) {}"
 try 0 "int main(int argc, int argv) { int* a; return 0; } int *test(int a) {}"
 try 3 "int main(int argc, int argv) { int x; x = 3; int *y; y = &x; return *y; }"
+# ステップ18: ポインタの加算と減算を実装する
+try 1 "int main(int argc, int argv) { int *p; alloc4(&p, 1, 2, 4, 8); int *q; q = p; return *q; }"
+try 4 "int main(int argc, int argv) { int *p; alloc4(&p, 1, 2, 4, 8); int *q; q = p + 2; return *q; }"
+try 8 "int main(int argc, int argv) { int *p; alloc4(&p, 1, 2, 4, 8); int *q; q = p + 3; return *q; }"
 
 echo OK
