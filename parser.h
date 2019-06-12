@@ -67,6 +67,8 @@ public:
   char *name() { return _name; }
   char *input() { return _input; }
 
+  void ty_print(int n);
+
 private:
   int _ty;       // トークンの型
   int _val;      // tyがTK_NUMの場合、その数値
@@ -81,6 +83,7 @@ enum {
   ND_IDENT,     // 識別子
   ND_FCALL,     // 関数呼び出し
   ND_FDEFIN,    // 関数定義
+  ND_VDEFIN,    // 変数定義
   ND_BLOCK,     // ブロック
   ND_IF,        // if
   ND_IFELSE,    // if else
@@ -117,6 +120,8 @@ public:
   Node *node1() { return _node1; }
   Node *node2() { return _node2; }
   NodeVector *nodes() { return _nodes; }
+
+  void nd_print(int n);
 
 private:
   int _ty;                // 演算子かND_NUM

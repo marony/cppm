@@ -42,6 +42,53 @@ Token::Token(int ty, char* name, char *input)
   : _ty(ty), _name(name), _input(input) {
 }
 
+void Token::ty_print(int n) {
+  switch (ty()) {
+    default:
+      debug("%*s%c: ", n, "", ty());
+      break;
+    case TK_NUM:
+      debug("%*sNum: %d", n, "", val());
+      break;
+    case TK_IDENT:
+      debug("%*sIdent: %s", n, "", name());
+      break;
+    case TK_IF:
+      debug("%*sIf: ", n, "");
+      break;
+    case TK_ELSE:
+      debug("%*sElse: ", n, "");
+      break;
+    case TK_WHILE:
+      debug("%*sWhile: ", n, "");
+      break;
+    case TK_FOR:
+      debug("%*sFor: ", n, "");
+      break;
+    case TK_RETURN:
+      debug("%*sReturn: ", n, "");
+      break;
+    case TK_TYPE:
+      debug("%*sType: %s", n, "", name());
+      break;
+    case TK_EQ:
+      debug("%*sEQ: ==", n, "");
+      break;
+    case TK_NE:
+      debug("%*sNE: !=", n, "");
+      break;
+    case TK_LE:
+      debug("%*sLE: <=", n, "");
+      break;
+    case TK_GE:
+      debug("%*sGE: >=", n, "");
+      break;
+    case TK_EOF:
+      debug("%*sEOF: ", n, "");
+      break;
+  }
+}
+
 // コンストラクタ
 Node::Node(int ty, Node *lhs, Node *rhs)
   : _ty(ty), _lhs(lhs), _rhs(rhs) {
@@ -69,6 +116,100 @@ Node::Node(int ty, char *name, NodeVector *nodes)
 
 Node::Node(int ty, char *name, NodeVector *nodes, Node *node)
   : _ty(ty), _name(name), _nodes(nodes), _lhs(node) {
+}
+
+void Node::nd_print(int n) {
+  switch (ty()) {
+    default:
+      debug("%*s%c(%d): ", n, "", ty(), ty());
+      if (name() != NULL)
+        debug(name());
+      if (lhs() != NULL)
+        lhs()->nd_print(n + 4);
+      if (rhs() != NULL)
+        rhs()->nd_print(n + 4);
+      if (node1() != NULL)
+        node1()->nd_print(n + 4);
+      if (node2() != NULL)
+        node2()->nd_print(n + 4);
+      if (nodes() != NULL) {
+        for (int i = 0; i < nodes()->len(); ++i)
+          nodes()->get(i)->nd_print(n + 4);
+      }
+      break;
+    case ND_NUM:
+      debug("%*sNum: %d", n, "", val());
+      break;
+    case ND_IDENT:
+      debug("%*sIdent: %s, %d", n, "", name(), symbol()->offset());
+      break;
+    case ND_FCALL:
+      debug("%*sFCall: %s", n, "", name());
+      for (int i = 0; i < nodes()->len(); ++i)
+        nodes()->get(i)->nd_print(n + 4);
+      break;
+    case ND_FDEFIN:
+      debug("%*sFdefin: %s", n, "", name());
+      for (int i = 0; i < nodes()->len(); ++i)
+        nodes()->get(i)->nd_print(n + 4);
+      lhs()->nd_print(n + 4);
+      break;
+    case ND_VDEFIN:
+      debug("%*sVdefin: %s, %d", n, "", name(), symbol()->offset());
+      break;
+    case ND_BLOCK:
+      debug("%*sBlock: ", n, "");
+      for (int i = 0; i < nodes()->len(); ++i)
+        nodes()->get(i)->nd_print(n + 4);
+      break;
+    case ND_IF:
+      debug("%*sIf: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+    case ND_IFELSE:
+      debug("%*sIfElse: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      node1()->nd_print(n + 4);
+      break;
+    case ND_WHILE:
+      debug("%*sWhile: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+    case ND_FOR:
+      debug("%*sFor: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      node1()->nd_print(n + 4);
+      node2()->nd_print(n + 4);
+      break;
+    case ND_RETURN:
+      debug("%*sReturn: ", n, "");
+      lhs()->nd_print(n + 4);
+      break;
+    case ND_EQ:
+      debug("%*s==: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+    case ND_NE:
+      debug("%*s!=: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+    case ND_LE:
+      debug("%*s<=: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+    case ND_GE:
+      debug("%*s>=: ", n, "");
+      lhs()->nd_print(n + 4);
+      rhs()->nd_print(n + 4);
+      break;
+  }
 }
 
 int consume(int ty) {
@@ -141,7 +282,7 @@ Node *_function_difinition() {
         }
         // TODO: 引数の型と識別子表の型が違ったらエラーにしないと
         type = symbol->type();
-        Node *node = new Node(ND_IDENT, name, symbol);
+        Node *node = new Node(ND_VDEFIN, name, symbol);
         nodes->push(node);
       }
       else {
@@ -159,7 +300,6 @@ Node *_function_difinition() {
 
 // 関数定義・変数宣言
 Node *defin() {
-  debug("defin: %d", tokens.get(pos)->ty());
   return _function_difinition();
 }
 
@@ -250,12 +390,11 @@ Node *_variable_difinition() {
   symbol = new SymbolInfo(type, offset);
   map.put(name, symbol);
 
-  return new Node(ND_IDENT, name, symbol);
+  return new Node(ND_VDEFIN, name, symbol);
 }
 
 // 文
 Node *stmt() {
-  debug("stmt: %d", tokens.get(pos)->ty());
   Node *node;
 
   if (consume('{'))
@@ -272,7 +411,7 @@ Node *stmt() {
     node = _variable_difinition();
   else
     node = expr();
-  
+
   if (!consume(';'))
     error_at(tokens.get(pos)->input(), "';'ではないトークンです");
   return node;
@@ -280,13 +419,11 @@ Node *stmt() {
 
 // 式
 Node *expr() {
-  debug("expr: %d", tokens.get(pos)->ty());
   return assign();
 }
 
 // 代入
 Node *assign() {
-  debug("assign: %d", tokens.get(pos)->ty());
   Node *node = equality();
   if (consume('='))
     node = new Node('=', node, assign());
@@ -295,7 +432,6 @@ Node *assign() {
 
 // 比較
 Node *equality() {
-  debug("equality: %d", tokens.get(pos)->ty());
   Node *node = relational();
 
   for (;;) {
@@ -310,7 +446,6 @@ Node *equality() {
 
 // 二項演算子
 Node *relational() {
-  debug("relational: %d", tokens.get(pos)->ty());
   Node *node = add();
 
   for (;;) {
@@ -329,7 +464,6 @@ Node *relational() {
 
 // 加算・減算
 Node *add() {
-  debug("add: %d", tokens.get(pos)->ty());
   Node *node = mul();
 
   for (;;) {
@@ -344,7 +478,6 @@ Node *add() {
 
 // 乗算・除算(項)(term)
 Node *mul() {
-  debug("mul: %d", tokens.get(pos)->ty());
   Node *node = unary();
 
   for (;;) {
@@ -359,11 +492,15 @@ Node *mul() {
 
 // 一項演算子
 Node *unary() {
-  debug("unary: %d", tokens.get(pos)->ty());
   if (consume('+'))
     return term();
-  if (consume('-')) // "0 - term"
+  else if (consume('-')) // "0 - term"
     return new Node('-', new Node(ND_NUM, 0), term());
+  else if (consume('*'))
+    return new Node('*', unary(), NULL);
+  else if (consume('&'))
+    return new Node('&', unary(), NULL);
+
   return term();
 }
 
@@ -381,7 +518,6 @@ Node *_brackets() {
 Node *_ident() {
     // 変数評価
     char *name = tokens.get(pos++)->name();
-    debug("map address 2 = %d", &map);
     SymbolInfo *symbol = map.get(name);
     Type *type = NULL;
     if (symbol == NULL) {
@@ -398,7 +534,6 @@ Node *_ident() {
     } else {
       type = symbol->type();
     }
-    debug("map length = %d", map.len());
     // 関数呼び出し
     if (consume('(')) {
       NodeVector *nodes = new NodeVector();
@@ -420,22 +555,22 @@ Node *_ident() {
 
 // 因子(factor)
 Node *term() {
-  debug("term: %d", tokens.get(pos)->ty());
   // 次のトークンが'('なら、"(" expr ")"のはず
   if (consume('('))
     return _brackets();
 
-  // 識別子
-  if (tokens.get(pos)->ty() == TK_IDENT)
-    return _ident();
-
-  // そうでなければ数値のはず
+  // 数値
   if (tokens.get(pos)->ty() == TK_NUM)
     return new Node(ND_NUM, tokens.get(pos++)->val());
 
-  debug("%d\n", tokens.get(pos)->ty());
+  // 識別子
+  if (tokens.get(pos)->ty() == '*' ||
+      tokens.get(pos)->ty() == '&' ||
+      tokens.get(pos)->ty() == TK_IDENT)
+    return _ident();
+
   error_at(tokens.get(pos)->input(),
-           "数値でも開きカッコでもないトークンです");
+           "識別子でも数値でも開きカッコでもないトークンです");
 }
 
 // user_inputが指している文字列を
@@ -472,11 +607,11 @@ void tokenize(char *p) {
       p += 2;
       continue;
     }
-    // 1文字 二項演算子
+    // 1文字 単項演算子 / 二項演算子
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '{' || *p == '}' || *p == '(' || *p == ')' ||
         *p == '<' || *p == '>' || *p == '=' || *p == ';' ||
-        *p == ',') {
+        *p == ',' || *p == '&') {
       tokens.push(new Token(*p, p));
       ++p;
       continue;

@@ -48,7 +48,7 @@ try 1 "int main(int argc, int argv)  { return 0 >= 0; }"
 try 1 "int main(int argc, int argv)  { return 0 <= 1; }"
 try 1 "int main(int argc, int argv)  { return 0 <= 0; }"
 # ステップ9：1文字のローカル変数
-try 15 "int main(int argc, int argv)  { int a; a = 3; int b; b = 30; int c; c = 5; b - a * c; }"
+#try 15 "int main(int argc, int argv)  { int a; a = 3; int b; b = 30; int c; c = 5; b - a * c; }"
 # ステップ10：return文
 try 15 "int main(int argc, int argv)  { int a; a = 3; int b; b = 30; int c; c = 5; return b - a * c; }"
 # ステップ11：複数文字のローカル変数
@@ -84,5 +84,6 @@ try 120 "int factorial(int n) { if (n <= 1) return 1; return n * factorial(n - 1
 try 0 "int main(int argc, int argv) { int* a; return 0; }"
 try 0 "int main(int argc, int argv) { int* a; return 0; } int test(int *a) {}"
 try 0 "int main(int argc, int argv) { int* a; return 0; } int *test(int a) {}"
+try 3 "int main(int argc, int argv) { int x; x = 3; int *y; y = &x; return *y; }"
 
 echo OK

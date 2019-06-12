@@ -97,12 +97,13 @@ int main(int argc, char **argv) {
   // 先頭の式から順にコード生成
   int i = 0;
   for (; code[i]; ++i) {
+    code[i]->nd_print(0);
     gen(code[i]);
 
     // 式の評価結果としてスタックに一つの値が残っている
     // はずなので、スタックが溢れないようにポップしておく
     std::cout << "  pop rax" << std::endl;
   }
-  
+
   return 0;
 }
