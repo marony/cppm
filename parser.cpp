@@ -141,7 +141,7 @@ void Node::nd_print(int n) {
       debug("%*sNum: %d", n, "", val());
       break;
     case ND_IDENT:
-      debug("%*sIdent: %s, %d", n, "", name(), symbol()->offset());
+      debug("%*sIdent: %s, %d(%s, %d)", n, "", name(), symbol()->offset(), symbol()->type()->name(), symbol()->type()->ty());
       break;
     case ND_FCALL:
       debug("%*sFCall: %s", n, "", name());
@@ -247,10 +247,10 @@ Node *_function_difinition() {
   if (!consume(TK_TYPE))
     error_at(tokens.get(pos)->input(), "関数の型がありません");
   // 型修飾('*')
-  Type *type = new Type(INT, NULL);
+  Type *type = new Type(INT, "int", NULL);
   while (tokens.get(pos)->ty() == '*') {
     ++pos;
-    type = new Type(PTR, type);
+    type = new Type(PTR, "ptr", type);
   }
   // 関数名
   if (tokens.get(pos)->ty() != TK_IDENT)
@@ -266,10 +266,10 @@ Node *_function_difinition() {
       if (!consume(TK_TYPE))
         error_at(tokens.get(pos)->input(), "引数の型がありません");
       // 型修飾('*')
-      Type *type = new Type(INT, NULL);
+      Type *type = new Type(INT, "int", NULL);
       while (tokens.get(pos)->ty() == '*') {
         ++pos;
-        type = new Type(PTR, type);
+        type = new Type(PTR, "ptr", type);
       }
       // 引数名
       if (tokens.get(pos)->ty() == TK_IDENT) {
@@ -277,7 +277,7 @@ Node *_function_difinition() {
         SymbolInfo *symbol = map.get(name);
         if (symbol == NULL) {
           int offset = 8 * (map.len() + 1);
-          symbol = new SymbolInfo(type, offset);
+          symbol = new SymbolInfo(type, name, offset);
           map.put(name, symbol);
         }
         // TODO: 引数の型と識別子表の型が違ったらエラーにしないと
@@ -371,10 +371,10 @@ Node *_variable_difinition() {
   if (!consume(TK_TYPE))
     error_at(tokens.get(pos)->input(), "変数の型がありません");
   // 型修飾('*')
-  Type *type = new Type(INT, NULL);
+  Type *type = new Type(INT, "int", NULL);
   while (tokens.get(pos)->ty() == '*') {
     ++pos;
-    type = new Type(PTR, type);
+    type = new Type(PTR, "ptr", type);
   }
   // 変数名
   Token *token = tokens.get(pos++);
@@ -387,7 +387,7 @@ Node *_variable_difinition() {
     error_at(tokens.get(pos)->input(), "すでに定義されている識別子です");
 
   int offset = 8 * (map.len() + 1);
-  symbol = new SymbolInfo(type, offset);
+  symbol = new SymbolInfo(type, name, offset);
   map.put(name, symbol);
 
   return new Node(ND_VDEFIN, name, symbol);
@@ -528,8 +528,8 @@ Node *_ident() {
       }
       // 関数呼び出しか定義されている変数
       int offset = 8 * (map.len() + 1);
-      type = new Type(INT, NULL);
-      symbol = new SymbolInfo(type, offset);
+      type = new Type(INT, "int", NULL);
+      symbol = new SymbolInfo(type, name, offset);
       map.put(name, symbol);
     } else {
       type = symbol->type();

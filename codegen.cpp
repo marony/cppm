@@ -268,12 +268,46 @@ void gen(Node *node) {
   // 左辺
   std::cout << "  pop rax" << std::endl;
 
-  // 演算の生成
+  // 二項演算子の生成
   switch (node->ty()) {
   case '+':
+    if (node->lhs()->ty() == ND_IDENT) {
+      switch (node->lhs()->symbol()->type()->ty()) {
+      case INT:
+        break;
+      case PTR:
+        // ポインタが指す型の大きさを掛けてから加算
+        // TODO: 固定で4になってしまっている
+        // TODO: 右辺やポインタのポインタや演算子の入れ子も考える
+        std::cout << "  push rax" << std::endl;
+        std::cout << "  mov rax, rdi" << std::endl;
+        std::cout << "  mov rsi, 4" << std::endl;
+        std::cout << "  imul rsi" << std::endl;
+        std::cout << "  mov rdi, rax" << std::endl;
+        std::cout << "  pop rax" << std::endl;
+        break;
+      }
+    }
     std::cout << "  add rax, rdi" << std::endl;
     break;
   case '-':
+    if (node->lhs()->ty() == ND_IDENT) {
+      switch (node->lhs()->symbol()->type()->ty()) {
+      case INT:
+        break;
+      case PTR:
+        // ポインタが指す型の大きさを掛けてから加算
+        // TODO: 固定で4になってしまっている
+        // TODO: 右辺やポインタのポインタや演算子の入れ子も考える
+        std::cout << "  push rax" << std::endl;
+        std::cout << "  mov rax, rdi" << std::endl;
+        std::cout << "  mov rsi, 4" << std::endl;
+        std::cout << "  imul rsi" << std::endl;
+        std::cout << "  mov rdi, rax" << std::endl;
+        std::cout << "  pop rax" << std::endl;
+        break;
+      }
+    }
     std::cout << "  sub rax, rdi" << std::endl;
     break;
   case '*':

@@ -4,7 +4,7 @@ try() {
   expected="$1"
   input="$2"
 
-  echo $input
+  echo "$input"
   ./cppm "$input" > tmp.s
   gcc -g -c tmp.s
   gcc -g -c test.c
