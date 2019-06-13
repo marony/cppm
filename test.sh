@@ -49,7 +49,6 @@ try 1 "int main(int argc, int argv)  { return 0 >= 0; }"
 try 1 "int main(int argc, int argv)  { return 0 <= 1; }"
 try 1 "int main(int argc, int argv)  { return 0 <= 0; }"
 # ステップ9：1文字のローカル変数
-#try 15 "int main(int argc, int argv)  { int a; a = 3; int b; b = 30; int c; c = 5; b - a * c; }"
 # ステップ10：return文
 try 15 "int main(int argc, int argv)  { int a; a = 3; int b; b = 30; int c; c = 5; return b - a * c; }"
 # ステップ11：複数文字のローカル変数
